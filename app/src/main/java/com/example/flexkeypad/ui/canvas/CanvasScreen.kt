@@ -71,6 +71,7 @@ fun CanvasScreen(
                 state = state,
                 onToggleMode = { viewModel.toggleCanvasMode() },
                 onToggleFullScreen = { viewModel.toggleFullScreen() },
+                onToggleHaptic = { viewModel.toggleHaptic() },
                 onAddNewButton = { viewModel.addNewButton() },
                 onToggleGrid = { viewModel.toggleSnapToGrid() },
                 onOpenProfileDialog = { viewModel.openProfileDialog() },

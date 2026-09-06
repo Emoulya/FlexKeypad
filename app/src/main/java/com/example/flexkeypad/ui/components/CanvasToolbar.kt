@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -71,6 +72,7 @@ fun CanvasTopMenu(
     state: KeypadUiState,
     onToggleMode: () -> Unit,
     onToggleFullScreen: () -> Unit,
+    onToggleHaptic: () -> Unit,
     onAddNewButton: () -> Unit,
     onToggleGrid: () -> Unit,
     onOpenProfileDialog: () -> Unit,
@@ -248,7 +250,55 @@ fun CanvasTopMenu(
                 colors = MenuDefaults.itemColors(textColor = TextPrimary)
             )
 
-            // 3. Connection Status Dialog Trigger
+            // 3. Haptic Feedback Toggle
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Vibration,
+                        contentDescription = "Haptic Feedback",
+                        tint = if (state.isHapticEnabled) NeonCyan else TextMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Getaran Haptik",
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = if (state.isHapticEnabled) "Getar saat menekan tombol" else "Getaran dinonaktifkan",
+                            color = TextMuted,
+                            fontSize = 9.5.sp
+                        )
+                    }
+                },
+                trailingIcon = {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (state.isHapticEnabled) NeonGreen.copy(alpha = 0.2f) else AmoledBorder)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (state.isHapticEnabled) "ON" else "OFF",
+                            color = if (state.isHapticEnabled) NeonGreen else TextMuted,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                modifier = Modifier.height(38.dp),
+                onClick = {
+                    onToggleHaptic()
+                },
+                colors = MenuDefaults.itemColors(textColor = TextPrimary)
+            )
+
+            // 4. Connection Status Dialog Trigger
             DropdownMenuItem(
                 leadingIcon = {
                     Icon(

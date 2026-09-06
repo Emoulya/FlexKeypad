@@ -21,5 +21,6 @@ data class KeypadUiState(
     val isProfileDialogOpen: Boolean = false,
     val isConnectionDialogOpen: Boolean = false,
     val isFullScreen: Boolean = false,
+    val isHapticEnabled: Boolean = true,
     val infoMessage: String? = null
 )

@@ -48,14 +48,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private val viewModel: KeypadViewModel by viewModels {
-        val savedFullScreen = getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
-            .getBoolean("is_fullscreen", false)
+        val prefs = getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
+        val savedFullScreen = prefs.getBoolean("is_fullscreen", false)
+        val savedHapticEnabled = prefs.getBoolean("is_haptic_enabled", true)
         KeypadViewModel.Factory(
             manageProfileUseCase = ManageProfileUseCase(repository),
             dispatchKeyStrokeUseCase = DispatchKeyStrokeUseCase(compositeController),
             compositeHidController = compositeController,
             hapticFeedbackHelper = hapticHelper,
-            initialFullScreen = savedFullScreen
+            initialFullScreen = savedFullScreen,
+            initialHapticEnabled = savedHapticEnabled
         )
     }
 
@@ -104,6 +106,14 @@ class MainActivity : ComponentActivity() {
                     getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
                         .edit()
                         .putBoolean("is_fullscreen", state.isFullScreen)
+                        .apply()
+                }
+
+                // Persist Haptic Enabled state
+                LaunchedEffect(state.isHapticEnabled) {
+                    getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("is_haptic_enabled", state.isHapticEnabled)
                         .apply()
                 }
 

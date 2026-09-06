@@ -24,10 +24,16 @@ class KeypadViewModel(
     private val dispatchKeyStrokeUseCase: DispatchKeyStrokeUseCase,
     private val compositeHidController: CompositeHidController,
     private val hapticFeedbackHelper: HapticFeedbackHelper,
-    initialFullScreen: Boolean = false
+    initialFullScreen: Boolean = false,
+    initialHapticEnabled: Boolean = true
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(KeypadUiState(isFullScreen = initialFullScreen))
+    private val _uiState = MutableStateFlow(
+        KeypadUiState(
+            isFullScreen = initialFullScreen,
+            isHapticEnabled = initialHapticEnabled
+        )
+    )
     val uiState: StateFlow<KeypadUiState> = _uiState.asStateFlow()
 
     init {
@@ -90,6 +96,14 @@ class KeypadViewModel(
 
     fun toggleFullScreen() {
         _uiState.update { it.copy(isFullScreen = !it.isFullScreen) }
+    }
+
+    fun toggleHaptic() {
+        val next = !_uiState.value.isHapticEnabled
+        _uiState.update { it.copy(isHapticEnabled = next) }
+        if (next) {
+            hapticFeedbackHelper.performKeyClick()
+        }
     }
 
     fun selectButton(buttonId: String?) {
@@ -240,7 +254,7 @@ class KeypadViewModel(
         if (_uiState.value.canvasMode != CanvasMode.PLAY) return
 
         _uiState.update { it.copy(pressedButtonIds = it.pressedButtonIds + button.id) }
-        if (button.hapticEnabled) {
+        if (_uiState.value.isHapticEnabled && button.hapticEnabled) {
             hapticFeedbackHelper.performKeyClick()
         }
         dispatchKeyStrokeUseCase.onButtonPressed(button)
@@ -335,7 +349,8 @@ class KeypadViewModel(
         private val dispatchKeyStrokeUseCase: DispatchKeyStrokeUseCase,
         private val compositeHidController: CompositeHidController,
         private val hapticFeedbackHelper: HapticFeedbackHelper,
-        private val initialFullScreen: Boolean = false
+        private val initialFullScreen: Boolean = false,
+        private val initialHapticEnabled: Boolean = true
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -344,7 +359,8 @@ class KeypadViewModel(
                 dispatchKeyStrokeUseCase,
                 compositeHidController,
                 hapticFeedbackHelper,
-                initialFullScreen
+                initialFullScreen,
+                initialHapticEnabled
             ) as T
         }
     }
