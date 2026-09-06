@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -45,6 +46,17 @@ import com.example.flexkeypad.ui.theme.AmoledBorder
 import com.example.flexkeypad.ui.theme.NeonCyan
 import com.example.flexkeypad.ui.theme.NeonRed
 import com.example.flexkeypad.ui.theme.TextMuted
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.example.flexkeypad.ui.theme.AmoledSurface
+import com.example.flexkeypad.ui.theme.NeonGreen
+import com.example.flexkeypad.ui.theme.TextPrimary
 import kotlin.math.roundToInt
 
 @Composable
@@ -59,6 +71,7 @@ fun EditModeCanvas(
     onResizeButtonLive: (buttonId: String, newWidth: Float, newHeight: Float) -> Unit,
     onCommitResizeButton: (buttonId: String, finalWidth: Float, finalHeight: Float) -> Unit,
     onEditButton: (KeypadButton) -> Unit,
+    onDuplicateButton: (KeypadButton) -> Unit,
     onDeleteButton: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -99,6 +112,7 @@ fun EditModeCanvas(
                     onCommitResizeButton(button.id, w, h)
                 },
                 onEdit = { onEditButton(button) },
+                onDuplicate = { onDuplicateButton(button) },
                 onDelete = { onDeleteButton(button.id) },
                 modifier = Modifier.offset {
                     IntOffset(
@@ -148,6 +162,7 @@ fun EditModeButtonItem(
     onResizeLive: (newW: Float, newH: Float) -> Unit,
     onCommitResize: (finalW: Float, finalH: Float) -> Unit,
     onEdit: () -> Unit,
+    onDuplicate: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -165,12 +180,15 @@ fun EditModeButtonItem(
     val currentOnCommitMove by rememberUpdatedState(onCommitMove)
     val currentOnResizeLive by rememberUpdatedState(onResizeLive)
     val currentOnCommitResize by rememberUpdatedState(onCommitResize)
+    val currentOnDuplicate by rememberUpdatedState(onDuplicate)
+
+    var showDuplicateMenu by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .size(button.width.dp, button.height.dp)
     ) {
-        // Main Button Surface with Smooth Drag Gesture
+        // Main Button Surface with Smooth Drag Gesture & Hold-to-Duplicate
         var dragAccumulatedX = 0f
         var dragAccumulatedY = 0f
 
@@ -190,9 +208,15 @@ fun EditModeButtonItem(
                     shape = RoundedCornerShape(14.dp)
                 )
                 .pointerInput(button.id) {
-                    detectTapGestures {
-                        currentOnSelect()
-                    }
+                    detectTapGestures(
+                        onTap = {
+                            currentOnSelect()
+                        },
+                        onLongPress = {
+                            currentOnSelect()
+                            showDuplicateMenu = true
+                        }
+                    )
                 }
                 .pointerInput(button.id) {
                     detectDragGestures(
@@ -264,53 +288,172 @@ fun EditModeButtonItem(
             }
         }
 
+        // Contextual Hold/Long-Press Duplicate Menu
+        DropdownMenu(
+            expanded = showDuplicateMenu,
+            onDismissRequest = { showDuplicateMenu = false },
+            modifier = Modifier
+                .width(220.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(AmoledSurface)
+                .border(1.dp, AmoledBorder, RoundedCornerShape(14.dp))
+                .padding(vertical = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(NeonCyan)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Tombol: ${button.label}",
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            HorizontalDivider(color = AmoledBorder.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Duplikat",
+                        tint = NeonGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Duplikat Tombol",
+                            color = NeonGreen,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Salin ukuran & fungsi tombol",
+                            color = TextMuted,
+                            fontSize = 9.5.sp
+                        )
+                    }
+                },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                onClick = {
+                    showDuplicateMenu = false
+                    currentOnDuplicate()
+                },
+                colors = MenuDefaults.itemColors(textColor = TextPrimary)
+            )
+
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = NeonCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                text = {
+                    Text(text = "Edit Konfigurasi", color = TextPrimary, fontSize = 12.sp)
+                },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                onClick = {
+                    showDuplicateMenu = false
+                    onEdit()
+                },
+                colors = MenuDefaults.itemColors(textColor = TextPrimary)
+            )
+
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Hapus",
+                        tint = NeonRed,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                text = {
+                    Text(text = "Hapus Tombol", color = NeonRed, fontSize = 12.sp)
+                },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                onClick = {
+                    showDuplicateMenu = false
+                    onDelete()
+                },
+                colors = MenuDefaults.itemColors(textColor = TextPrimary)
+            )
+        }
+
         // Action handles when button is selected
         if (isSelected) {
-            // Quick Edit & Delete pill at top-right
+            // Quick Duplicate, Edit & Delete pill at top-right inside button bounds
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 6.dp, y = (-14).dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF0F172A))
-                    .border(1.dp, AmoledBorder, RoundedCornerShape(10.dp))
+                    .padding(top = 4.dp, end = 4.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF0F172A).copy(alpha = 0.95f))
+                    .border(1.dp, AmoledBorder, RoundedCornerShape(8.dp))
                     .padding(horizontal = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
+                    onClick = onDuplicate,
+                    modifier = Modifier.size(22.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Duplicate Button",
+                        tint = NeonGreen,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+
+                IconButton(
                     onClick = onEdit,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(22.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit Details",
                         tint = NeonCyan,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
 
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(22.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete Button",
                         tint = NeonRed,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
 
-            // Resize Handle at Bottom-Right
+            // Resize Handle at Bottom-Right inside button bounds
             var resizeAccumulatedW = 0f
             var resizeAccumulatedH = 0f
 
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .offset(x = 8.dp, y = 8.dp)
-                    .size(28.dp)
+                    .padding(bottom = 4.dp, end = 4.dp)
+                    .size(22.dp)
                     .clip(CircleShape)
                     .background(NeonCyan)
                     .border(2.dp, Color.Black, CircleShape)

@@ -59,6 +59,7 @@ fun CanvasScreen(
                     onResizeButtonLive = { id, w, h -> viewModel.updateButtonSizeLive(id, w, h) },
                     onCommitResizeButton = { id, w, h -> viewModel.commitButtonSize(id, w, h) },
                     onEditButton = { viewModel.openButtonEditor(it) },
+                    onDuplicateButton = { viewModel.duplicateButton(it) },
                     onDeleteButton = { viewModel.deleteButton(it) },
                     modifier = Modifier.fillMaxSize()
                 )

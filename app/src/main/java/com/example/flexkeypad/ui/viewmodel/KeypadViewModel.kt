@@ -117,6 +117,20 @@ class KeypadViewModel(
         }
     }
 
+    fun duplicateButton(button: KeypadButton) {
+        viewModelScope.launch {
+            val profile = _uiState.value.activeProfile
+            val duplicated = manageProfileUseCase.duplicateButton(
+                currentProfile = profile,
+                sourceButton = button,
+                offsetX = 24f,
+                offsetY = 24f
+            )
+            hapticFeedbackHelper.performSuccess()
+            _uiState.update { it.copy(selectedButtonId = duplicated.id) }
+        }
+    }
+
     /**
      * Fast in-memory update for 60/120fps smooth drag without disk I/O bottleneck.
      */

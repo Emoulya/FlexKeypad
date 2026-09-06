@@ -62,6 +62,24 @@ class ManageProfileUseCase(
         return updatedProfile
     }
 
+    suspend fun duplicateButton(
+        currentProfile: KeypadProfile,
+        sourceButton: KeypadButton,
+        offsetX: Float = 24f,
+        offsetY: Float = 24f
+    ): KeypadButton {
+        val newButton = sourceButton.copy(
+            id = "btn_${UUID.randomUUID().toString().take(8)}",
+            positionX = (sourceButton.positionX + offsetX).coerceAtLeast(0f),
+            positionY = (sourceButton.positionY + offsetY).coerceAtLeast(0f)
+        )
+        val updatedProfile = currentProfile.copy(
+            buttons = currentProfile.buttons + newButton
+        )
+        repository.saveProfile(updatedProfile)
+        return newButton
+    }
+
     suspend fun deleteButton(
         currentProfile: KeypadProfile,
         buttonId: String
