@@ -29,6 +29,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -54,68 +56,86 @@ fun PlayModeCanvas(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current.density
-    // Track pointer ID to currently pressed button ID for multi-touch accuracy
-    val pointerToButtonMap = remember { mutableStateMapOf<PointerId, String>() }
+
+    val currentButtons by rememberUpdatedState(buttons)
+    val currentOnPressed by rememberUpdatedState(onButtonPressed)
+    val currentOnReleased by rememberUpdatedState(onButtonReleased)
+    val currentOnReleaseAll by rememberUpdatedState(onReleaseAll)
+
+    // Map pointer ID to the button ID it is currently pressing
+    val activePointers = remember { mutableStateMapOf<PointerId, String>() }
 
     DisposableEffect(Unit) {
         onDispose {
-            pointerToButtonMap.clear()
-            onReleaseAll()
+            activePointers.clear()
+            currentOnReleaseAll()
         }
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(buttons) {
+            .pointerInput(Unit) {
                 awaitEachGesture {
-                    while (true) {
-                        val event = awaitPointerEvent()
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
                         val changes = event.changes
 
                         for (change in changes) {
                             val pointerId = change.id
-                            val currentPos = change.position
+                            val isPressed = change.pressed
+                            val prevButtonId = activePointers[pointerId]
 
-                            if (change.pressed && !change.previousPressed) {
-                                // Pointer down: find touched button
-                                val hitButton = buttons.findLast { button ->
-                                    isPointInsideButton(currentPos, button, density)
-                                }
-                                if (hitButton != null) {
-                                    pointerToButtonMap[pointerId] = hitButton.id
-                                    onButtonPressed(hitButton)
-                                    change.consume()
-                                }
-                            } else if (!change.pressed && change.previousPressed) {
-                                // Pointer up: release corresponding button
-                                val buttonId = pointerToButtonMap.remove(pointerId)
-                                if (buttonId != null) {
-                                    val button = buttons.find { it.id == buttonId }
-                                    if (button != null) {
-                                        onButtonReleased(button)
+                            if (isPressed) {
+                                val hitButton = findTouchedButton(
+                                    point = change.position,
+                                    buttons = currentButtons,
+                                    density = density,
+                                    paddingDp = 6f
+                                )
+                                val hitId = hitButton?.id
+
+                                if (hitId != prevButtonId) {
+                                    // Pointer moved to a new button or just touched down
+                                    if (prevButtonId != null) {
+                                        activePointers.remove(pointerId)
+                                        // Only release button if no other pointer is also holding it
+                                        if (!activePointers.values.contains(prevButtonId)) {
+                                            currentButtons.find { it.id == prevButtonId }?.let {
+                                                currentOnReleased(it)
+                                            }
+                                        }
                                     }
-                                    change.consume()
-                                }
-                            } else if (change.pressed && change.previousPressed) {
-                                // Pointer drag: check if still inside original button
-                                val assignedButtonId = pointerToButtonMap[pointerId]
-                                if (assignedButtonId != null) {
-                                    val button = buttons.find { it.id == assignedButtonId }
-                                    if (button != null && !isPointInsideButton(currentPos, button, density)) {
-                                        // Pointer slipped outside button bounding box
-                                        pointerToButtonMap.remove(pointerId)
-                                        onButtonReleased(button)
+
+                                    if (hitButton != null) {
+                                        val isAlreadyHeld = activePointers.values.contains(hitButton.id)
+                                        activePointers[pointerId] = hitButton.id
+                                        if (!isAlreadyHeld) {
+                                            currentOnPressed(hitButton)
+                                        }
                                     }
                                 }
+                                change.consume()
+                            } else {
+                                // Pointer lifted (UP)
+                                if (prevButtonId != null) {
+                                    activePointers.remove(pointerId)
+                                    // Only release button if no other pointer is still holding it
+                                    if (!activePointers.values.contains(prevButtonId)) {
+                                        currentButtons.find { it.id == prevButtonId }?.let {
+                                            currentOnReleased(it)
+                                        }
+                                    }
+                                }
+                                change.consume()
                             }
                         }
+                    } while (event.changes.any { it.pressed })
 
-                        // If no pointers remain active, clean up
-                        if (changes.none { it.pressed } && pointerToButtonMap.isNotEmpty()) {
-                            pointerToButtonMap.clear()
-                            onReleaseAll()
-                        }
+                    // All pointers in this gesture cycle have been lifted
+                    if (activePointers.isNotEmpty()) {
+                        activePointers.clear()
+                        currentOnReleaseAll()
                     }
                 }
             }
@@ -136,15 +156,44 @@ fun PlayModeCanvas(
     }
 }
 
-private fun isPointInsideButton(point: Offset, button: KeypadButton, density: Float): Boolean {
-    val leftPx = button.positionX * density
-    val topPx = button.positionY * density
-    val widthPx = button.width * density
-    val heightPx = button.height * density
+private fun isPointInsideButton(
+    point: Offset,
+    button: KeypadButton,
+    density: Float,
+    paddingDp: Float = 6f
+): Boolean {
+    val padPx = paddingDp * density
+    val leftPx = button.positionX * density - padPx
+    val topPx = button.positionY * density - padPx
+    val widthPx = button.width * density + (padPx * 2)
+    val heightPx = button.height * density + (padPx * 2)
     return point.x >= leftPx &&
             point.x <= (leftPx + widthPx) &&
             point.y >= topPx &&
             point.y <= (topPx + heightPx)
+}
+
+private fun findTouchedButton(
+    point: Offset,
+    buttons: List<KeypadButton>,
+    density: Float,
+    paddingDp: Float = 6f
+): KeypadButton? {
+    val candidates = buttons.filter { button ->
+        isPointInsideButton(point, button, density, paddingDp)
+    }
+    if (candidates.isEmpty()) return null
+    if (candidates.size == 1) return candidates.first()
+
+    // If multiple buttons fall within the padding tolerance,
+    // pick the button whose geometric center is closest to the touch point
+    return candidates.minByOrNull { button ->
+        val centerX = (button.positionX + button.width / 2f) * density
+        val centerY = (button.positionY + button.height / 2f) * density
+        val dx = point.x - centerX
+        val dy = point.y - centerY
+        dx * dx + dy * dy
+    }
 }
 
 
