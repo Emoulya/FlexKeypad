@@ -104,6 +104,7 @@ namespace FlexKeypad.Companion
 
             InitializeTray();
             Log("Tray initialized");
+            EnsureAutoStartup();
             RealDesktopInput.Start();
             Log("RealDesktopInput started");
 
@@ -223,8 +224,10 @@ namespace FlexKeypad.Companion
                     {
                         // Ensure adb forward is active
                         RunSilentAdbForward();
-                        Thread.Sleep(1500);
                     }
+
+                    // Always sleep at least 1500ms to throttle retries and prevent socket spam
+                    Thread.Sleep(1500);
                 }
                 catch (Exception ex)
                 {
@@ -253,44 +256,62 @@ namespace FlexKeypad.Companion
                 client.EndConnect(ar);
                 client.NoDelay = true;
 
-                Log("Watchdog: Connected to FlexKeypad at port 8899!");
+                NetworkStream stream = client.GetStream();
+                stream.ReadTimeout = 2500; // Handshake timeout
+                StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+
+                // Send initial handshake so the bidirectional tunnel stays active
+                writer.WriteLine("{\"type\":\"CONNECT\",\"version\":1}");
+
+                // Await handshake ACK from Android app
+                string firstLine = null;
+                try
+                {
+                    firstLine = reader.ReadLine();
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+
+                if (string.IsNullOrEmpty(firstLine) || !firstLine.Contains("CONNECTED_ACK"))
+                {
+                    Log("Handshake not acknowledged by device: " + (firstLine ?? "<null>"));
+                    return false;
+                }
+
+                Log("Watchdog: Handshake successful with FlexKeypad at port 8899!");
+                stream.ReadTimeout = 3500; // 3.5s timeout: auto-detects disconnect when no PONG or event received
                 UpdateUiSafe(delegate() { SetConnectionState(true); });
 
-                using (NetworkStream stream = client.GetStream())
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                // Background heartbeat ping thread (sends PING every 1.5s)
+                Thread pingThread = new Thread(delegate()
                 {
-                    // Send initial handshake so the bidirectional tunnel stays active
-                    writer.WriteLine("{\"type\":\"CONNECT\",\"version\":1}");
-
-                    // Background heartbeat ping thread
-                    Thread pingThread = new Thread(delegate()
-                    {
-                        while (isRunning && client.Connected)
-                        {
-                            try
-                            {
-                                Thread.Sleep(4000);
-                                if (client.Connected)
-                                {
-                                    writer.WriteLine("{\"type\":\"PING\"}");
-                                }
-                            }
-                            catch { break; }
-                        }
-                    });
-                    pingThread.IsBackground = true;
-                    pingThread.Start();
-
                     while (isRunning && client.Connected)
                     {
-                        string line = reader.ReadLine();
-                        if (line == null) break; // End of stream / disconnected
-                        line = line.Trim();
-                        if (line.Length > 0)
+                        try
                         {
-                            ProcessJsonEvent(line);
+                            Thread.Sleep(1500);
+                            if (client.Connected)
+                            {
+                                writer.WriteLine("{\"type\":\"PING\"}");
+                            }
                         }
+                        catch { break; }
+                    }
+                });
+                pingThread.IsBackground = true;
+                pingThread.Start();
+
+                while (isRunning && client.Connected)
+                {
+                    string line = reader.ReadLine();
+                    if (line == null) break; // End of stream / disconnected
+                    line = line.Trim();
+                    if (line.Length > 0)
+                    {
+                        ProcessJsonEvent(line);
                     }
                 }
 
@@ -347,11 +368,19 @@ namespace FlexKeypad.Companion
                 psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
                 psi.WindowStyle = ProcessWindowStyle.Hidden;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
                 using (Process p = Process.Start(psi))
                 {
                     if (p != null)
                     {
-                        bool finished = p.WaitForExit(5000);
+                        p.BeginOutputReadLine();
+                        p.BeginErrorReadLine();
+                        bool finished = p.WaitForExit(3000);
+                        if (!finished)
+                        {
+                            try { p.Kill(); } catch {}
+                        }
                         Log("RunSilentAdbForward: finished=" + finished + ", exitCode=" + (finished ? p.ExitCode.ToString() : "timeout"));
                         return finished && p.ExitCode == 0;
                     }
@@ -368,10 +397,15 @@ namespace FlexKeypad.Companion
         {
             try
             {
-                // Parse action: "DOWN", "UP", "RELEASE_ALL"
+                // Parse action: "DOWN", "UP", "RELEASE_ALL", "CONNECTED_ACK", "PING"
                 Match actionMatch = Regex.Match(json, "\"action\"\\s*:\\s*\"([^\"]+)\"");
                 if (!actionMatch.Success) return;
                 string action = actionMatch.Groups[1].Value;
+
+                if (action == "CONNECTED_ACK" || action == "PING" || action == "PONG")
+                {
+                    return;
+                }
 
                 if (action == "RELEASE_ALL")
                 {
@@ -460,6 +494,25 @@ namespace FlexKeypad.Companion
             catch (Exception)
             {
                 // Context might be disposing
+            }
+        }
+
+        private static void EnsureAutoStartup()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(RUN_REG_KEY, true))
+                {
+                    if (key != null && key.GetValue(APP_NAME) == null)
+                    {
+                        key.SetValue(APP_NAME, "\"" + Application.ExecutablePath + "\"");
+                        Log("Auto-registered in HKCU Run registry: " + Application.ExecutablePath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("EnsureAutoStartup failed: " + ex.Message);
             }
         }
 

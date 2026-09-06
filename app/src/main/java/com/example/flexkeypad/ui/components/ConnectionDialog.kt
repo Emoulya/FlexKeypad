@@ -207,9 +207,12 @@ fun ConnectionDialog(
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "How to connect via USB Cable:\n" +
-                                    "1. Connect Android phone/tablet to PC via USB cable.\n" +
-                                    "2. Forward socket port via ADB command:\n",
+                            text = "Cara Koneksi USB (Zero-Touch Plug & Play):\n" +
+                                    "1. Sambungkan kabel USB dari HP ke Laptop.\n" +
+                                    "2. Pastikan USB Debugging di HP aktif (Izinkan debugging jika muncul popup).\n" +
+                                    "3. FlexKeypad Companion di laptop otomatis berjalan di latar belakang (System Tray).\n" +
+                                    "4. Status akan otomatis berubah menjadi HIJAU 'USB (1)'.\n\n" +
+                                    "Manual / Fallback (Jika Companion belum aktif):",
                             color = TextSecondary,
                             fontSize = 12.sp,
                             lineHeight = 18.sp
@@ -230,17 +233,6 @@ fun ConnectionDialog(
                                 fontFamily = FontFamily.Monospace
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "3. Run the companion bridge on your PC:\n" +
-                                    "   - Windows: Double-click tools/companion-bridge/start-bridge.bat\n" +
-                                    "   - Node.js: node tools/companion-bridge/bridge.js\n" +
-                                    "Enjoy lightning fast inputs with near-zero latency!",
-                            color = TextSecondary,
-                            fontSize = 12.sp,
-                            lineHeight = 18.sp
-                        )
 
                     }
                 }

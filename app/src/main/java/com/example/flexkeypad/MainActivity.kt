@@ -59,7 +59,8 @@ class MainActivity : ComponentActivity() {
         // Initialize dependencies
         hapticHelper = HapticFeedbackHelper(this)
         bluetoothController = BluetoothHidController(this)
-        usbController = UsbBridgeController(port = 8899)
+        usbController = UsbBridgeController.getInstance(port = 8899)
+        usbController.startServer()
         compositeController = CompositeHidController(bluetoothController, usbController)
         repository = JsonProfileRepositoryImpl(this)
 
