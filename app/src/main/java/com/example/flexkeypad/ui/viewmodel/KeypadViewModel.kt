@@ -320,19 +320,29 @@ class KeypadViewModel(
         }
     }
 
-    fun exportProfileJson(): String {
-        var jsonStr = ""
+    fun exportProfileJson(profileId: String? = null, onComplete: (String) -> Unit) {
         viewModelScope.launch {
-            jsonStr = manageProfileUseCase.exportProfile(_uiState.value.activeProfile)
+            val profileToExport = if (profileId != null) {
+                _uiState.value.profiles.find { it.profileId == profileId } ?: _uiState.value.activeProfile
+            } else {
+                _uiState.value.activeProfile
+            }
+            val jsonStr = manageProfileUseCase.exportProfile(profileToExport)
+            onComplete(jsonStr)
         }
-        return jsonStr
     }
 
     fun importProfileJson(json: String, onComplete: (Boolean, String) -> Unit) {
+        val trimmed = json.trim()
+        if (trimmed.isBlank()) {
+            onComplete(false, "JSON cannot be empty.")
+            return
+        }
         viewModelScope.launch {
-            val result = manageProfileUseCase.importProfile(json)
+            val result = manageProfileUseCase.importProfile(trimmed)
             if (result.isSuccess) {
-                onComplete(true, "Profile '${result.getOrNull()?.profileName}' successfully imported!")
+                val profile = result.getOrNull()
+                onComplete(true, "Profile '${profile?.profileName}' successfully imported!")
             } else {
                 onComplete(false, "Failed to import profile: Invalid JSON format.")
             }

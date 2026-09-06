@@ -23,8 +23,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -47,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,13 +74,14 @@ fun ProfileDialog(
     onSelectProfile: (String) -> Unit,
     onCreateProfile: (String) -> Unit,
     onDeleteProfile: (String) -> Unit,
-    onExportProfile: () -> String,
+    onExportProfile: (String?, (String) -> Unit) -> Unit,
     onImportProfile: (String, (Boolean, String) -> Unit) -> Unit,
     onDismiss: () -> Unit
 ) {
     var newProfileName by remember { mutableStateOf("") }
     var importJsonText by remember { mutableStateOf("") }
     var isImportingMode by remember { mutableStateOf(false) }
+    var isExportLoading by remember { mutableStateOf(false) }
     var exportResultJson by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
@@ -164,6 +168,7 @@ fun ProfileDialog(
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(
                             horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Button(
@@ -174,6 +179,27 @@ fun ProfileDialog(
                                 )
                             ) {
                                 Text("Cancel", fontSize = 12.sp)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                    val clip = cm?.primaryClip?.getItemAt(0)?.text?.toString()
+                                    if (!clip.isNullOrBlank()) {
+                                        importJsonText = clip.trim()
+                                        statusMessage = "Pasted from clipboard!"
+                                    } else {
+                                        statusMessage = "Clipboard is empty."
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AmoledSurfaceVariant,
+                                    contentColor = NeonCyan
+                                )
+                            ) {
+                                Icon(Icons.Default.ContentPaste, "Paste", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Paste", fontSize = 12.sp)
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
@@ -223,6 +249,7 @@ fun ProfileDialog(
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(
                             horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Button(
@@ -237,10 +264,29 @@ fun ProfileDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 onClick = {
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, exportResultJson ?: "")
+                                        type = "text/plain"
+                                    }
+                                    val shareIntent = Intent.createChooser(sendIntent, "Share FlexKeypad Profile JSON")
+                                    context.startActivity(shareIntent)
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AmoledSurfaceVariant,
+                                    contentColor = NeonCyan
+                                )
+                            ) {
+                                Icon(Icons.Default.Share, "Share", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Share", fontSize = 12.sp)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
                                     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                                     cm?.setPrimaryClip(ClipData.newPlainText("FlexKeypad Profile", exportResultJson ?: ""))
                                     statusMessage = "JSON copied to clipboard!"
-
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = NeonCyan,
@@ -303,17 +349,37 @@ fun ProfileDialog(
                                     }
                                 }
 
-                                if (profiles.size > 1) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(
-                                        onClick = { onDeleteProfile(profile.profileId) },
+                                        onClick = {
+                                            isExportLoading = true
+                                            onExportProfile(profile.profileId) { json ->
+                                                isExportLoading = false
+                                                exportResultJson = json
+                                            }
+                                        },
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete Profile",
-                                            tint = NeonRed.copy(alpha = 0.8f),
+                                            imageVector = Icons.Default.Upload,
+                                            contentDescription = "Export Profile",
+                                            tint = NeonCyan.copy(alpha = 0.85f),
                                             modifier = Modifier.size(16.dp)
                                         )
+                                    }
+
+                                    if (profiles.size > 1) {
+                                        IconButton(
+                                            onClick = { onDeleteProfile(profile.profileId) },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete Profile",
+                                                tint = NeonRed.copy(alpha = 0.8f),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -372,8 +438,13 @@ fun ProfileDialog(
                     ) {
                         Button(
                             onClick = {
-                                exportResultJson = onExportProfile()
+                                isExportLoading = true
+                                onExportProfile(null) { json ->
+                                    isExportLoading = false
+                                    exportResultJson = json
+                                }
                             },
+                            enabled = !isExportLoading,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AmoledSurfaceVariant,
                                 contentColor = TextSecondary
@@ -382,7 +453,7 @@ fun ProfileDialog(
                         ) {
                             Icon(Icons.Default.Upload, "Export", modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Export JSON", fontSize = 11.sp)
+                            Text(if (isExportLoading) "Exporting..." else "Export JSON", fontSize = 11.sp)
                         }
 
                         Button(

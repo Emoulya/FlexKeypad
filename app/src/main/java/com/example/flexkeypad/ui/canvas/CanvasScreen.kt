@@ -97,7 +97,7 @@ fun CanvasScreen(
                     onSelectProfile = { viewModel.selectProfile(it) },
                     onCreateProfile = { viewModel.createNewProfile(it) },
                     onDeleteProfile = { viewModel.deleteProfile(it) },
-                    onExportProfile = { viewModel.exportProfileJson() },
+                    onExportProfile = { profileId, callback -> viewModel.exportProfileJson(profileId, callback) },
                     onImportProfile = { json, callback -> viewModel.importProfileJson(json, callback) },
                     onDismiss = { viewModel.closeProfileDialog() }
                 )
