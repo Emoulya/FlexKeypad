@@ -52,4 +52,21 @@ class HapticFeedbackHelper(context: Context) {
             }
         } catch (_: Exception) {}
     }
+
+    /**
+     * Triggers a distinct tactile confirmation for successful connection.
+     */
+    fun performSuccess() {
+        val vib = vibrator ?: return
+        if (!vib.hasVibrator()) return
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                vib.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
+            } else {
+                @Suppress("DEPRECATION")
+                vib.vibrate(longArrayOf(0, 30, 60, 40), -1)
+            }
+        } catch (_: Exception) {}
+    }
 }

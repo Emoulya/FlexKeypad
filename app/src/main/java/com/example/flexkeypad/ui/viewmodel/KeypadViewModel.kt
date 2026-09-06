@@ -30,9 +30,16 @@ class KeypadViewModel(
     val uiState: StateFlow<KeypadUiState> = _uiState.asStateFlow()
 
     init {
+        var isInitialProfileLoad = true
         viewModelScope.launch {
             manageProfileUseCase.getActiveProfile().collect { profile ->
-                _uiState.update { it.copy(activeProfile = profile) }
+                _uiState.update { current ->
+                    val nextMode = if (isInitialProfileLoad && profile.buttons.isNotEmpty()) {
+                        CanvasMode.PLAY
+                    } else current.canvasMode
+                    current.copy(activeProfile = profile, canvasMode = nextMode)
+                }
+                isInitialProfileLoad = false
             }
         }
 
@@ -55,8 +62,13 @@ class KeypadViewModel(
         }
 
         viewModelScope.launch {
+            var prevCount = 0
             compositeHidController.usbController.connectedClientsCount.collect { count ->
                 _uiState.update { it.copy(usbClientsCount = count) }
+                if (count > prevCount && count > 0) {
+                    hapticFeedbackHelper.performSuccess()
+                }
+                prevCount = count
             }
         }
     }

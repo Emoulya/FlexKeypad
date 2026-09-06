@@ -72,17 +72,18 @@ class UsbBridgeController(
                         _connectedClientsCount.value = connectedClients.size
                         _connectionStatus.value = ConnectionStatus.CONNECTED_USB
 
-                        // Monitor client disconnect
+                        // Monitor client disconnect & companion messages
                         launch {
                             try {
-                                val reader = client.getInputStream()
-                                val buffer = ByteArray(128)
-                                while (reader.read(buffer) != -1) {
-                                    // Keep reading heartbeat / commands if any
+                                val reader = client.getInputStream().bufferedReader()
+                                while (isActive) {
+                                    val line = reader.readLine() ?: break
+                                    Log.d(TAG, "Companion msg from ${client.remoteSocketAddress}: $line")
                                 }
                             } catch (e: Exception) {
-                                Log.d(TAG, "Client disconnected: ${e.message}")
+                                Log.d(TAG, "Client read exception: ${e.message}")
                             } finally {
+                                Log.d(TAG, "Companion disconnected: ${client.remoteSocketAddress}")
                                 clientWriters.remove(writer)
                                 connectedClients.remove(client)
                                 try { client.close() } catch (_: Exception) {}
