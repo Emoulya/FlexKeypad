@@ -1,0 +1,112 @@
+package com.example.flexkeypad.ui.canvas
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.example.flexkeypad.domain.model.CanvasMode
+import com.example.flexkeypad.ui.components.ButtonEditorDialog
+import com.example.flexkeypad.ui.components.CanvasToolbar
+import com.example.flexkeypad.ui.components.ConnectionDialog
+import com.example.flexkeypad.ui.components.ProfileDialog
+import com.example.flexkeypad.ui.theme.AmoledBlack
+import com.example.flexkeypad.ui.viewmodel.KeypadViewModel
+
+@Composable
+fun CanvasScreen(
+    viewModel: KeypadViewModel,
+    modifier: Modifier = Modifier
+) {
+    val state by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = AmoledBlack
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(AmoledBlack)
+        ) {
+            // Main Canvas Area
+            if (state.canvasMode == CanvasMode.PLAY) {
+                PlayModeCanvas(
+                    buttons = state.activeProfile.buttons,
+                    pressedButtonIds = state.pressedButtonIds,
+                    onButtonPressed = { viewModel.onButtonPressed(it) },
+                    onButtonReleased = { viewModel.onButtonReleased(it) },
+                    onReleaseAll = { viewModel.releaseAllPressedButtons() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                EditModeCanvas(
+                    buttons = state.activeProfile.buttons,
+                    selectedButtonId = state.selectedButtonId,
+                    isSnapToGrid = state.isSnapToGrid,
+                    gridSize = state.gridSize,
+                    onSelectButton = { viewModel.selectButton(it) },
+                    onMoveButtonLive = { id, x, y -> viewModel.updateButtonPositionLive(id, x, y) },
+                    onCommitMoveButton = { id, x, y -> viewModel.commitButtonPosition(id, x, y) },
+                    onResizeButtonLive = { id, w, h -> viewModel.updateButtonSizeLive(id, w, h) },
+                    onCommitResizeButton = { id, w, h -> viewModel.commitButtonSize(id, w, h) },
+                    onEditButton = { viewModel.openButtonEditor(it) },
+                    onDeleteButton = { viewModel.deleteButton(it) },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+            }
+
+            // Top Floating Toolbar
+            CanvasToolbar(
+                state = state,
+                onToggleMode = { viewModel.toggleCanvasMode() },
+                onAddNewButton = { viewModel.addNewButton() },
+                onToggleGrid = { viewModel.toggleSnapToGrid() },
+                onOpenProfileDialog = { viewModel.openProfileDialog() },
+                onOpenConnectionDialog = { viewModel.openConnectionDialog() },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+
+            // Button Editor Dialog
+            if (state.isButtonEditorOpen && state.editingButton != null) {
+                ButtonEditorDialog(
+                    button = state.editingButton!!,
+                    onSave = { viewModel.saveButtonDetails(it) },
+                    onDelete = { viewModel.deleteButton(it) },
+                    onDismiss = { viewModel.closeButtonEditor() }
+                )
+            }
+
+            // Profile Dialog
+            if (state.isProfileDialogOpen) {
+                ProfileDialog(
+                    profiles = state.profiles,
+                    activeProfileId = state.activeProfile.profileId,
+                    onSelectProfile = { viewModel.selectProfile(it) },
+                    onCreateProfile = { viewModel.createNewProfile(it) },
+                    onDeleteProfile = { viewModel.deleteProfile(it) },
+                    onExportProfile = { viewModel.exportProfileJson() },
+                    onImportProfile = { json, callback -> viewModel.importProfileJson(json, callback) },
+                    onDismiss = { viewModel.closeProfileDialog() }
+                )
+            }
+
+            // Connection Dialog
+            if (state.isConnectionDialogOpen) {
+                ConnectionDialog(
+                    status = state.connectionStatus,
+                    connectedDeviceName = state.connectedDeviceName,
+                    usbClientsCount = state.usbClientsCount,
+                    onDismiss = { viewModel.closeConnectionDialog() }
+                )
+            }
+        }
+    }
+}
