@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.flexkeypad.domain.model.CanvasMode
 import com.example.flexkeypad.ui.components.ButtonEditorDialog
 import com.example.flexkeypad.ui.components.CanvasTopMenu
@@ -27,12 +28,13 @@ fun CanvasScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = if (state.isFullScreen) androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0) else androidx.compose.material3.ScaffoldDefaults.contentWindowInsets,
         containerColor = AmoledBlack
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(if (state.isFullScreen) androidx.compose.foundation.layout.PaddingValues(0.dp) else innerPadding)
                 .background(AmoledBlack)
         ) {
             // Main Canvas Area

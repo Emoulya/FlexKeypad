@@ -1,6 +1,7 @@
 package com.example.flexkeypad
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.flexkeypad.data.feedback.HapticFeedbackHelper
 import com.example.flexkeypad.data.hid.BluetoothHidController
 import com.example.flexkeypad.data.hid.CompositeHidController
@@ -44,17 +48,25 @@ class MainActivity : ComponentActivity() {
     }
 
     private val viewModel: KeypadViewModel by viewModels {
+        val savedFullScreen = getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
+            .getBoolean("is_fullscreen", false)
         KeypadViewModel.Factory(
             manageProfileUseCase = ManageProfileUseCase(repository),
             dispatchKeyStrokeUseCase = DispatchKeyStrokeUseCase(compositeController),
             compositeHidController = compositeController,
-            hapticFeedbackHelper = hapticHelper
+            hapticFeedbackHelper = hapticHelper,
+            initialFullScreen = savedFullScreen
         )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
 
         // Initialize dependencies
         hapticHelper = HapticFeedbackHelper(this)
@@ -77,6 +89,22 @@ class MainActivity : ComponentActivity() {
                     } else {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
+                }
+
+                // Full Screen Mode: Hide / Show System Status & Navigation Bars
+                LaunchedEffect(state.isFullScreen) {
+                    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    if (state.isFullScreen) {
+                        insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                        insetsController.systemBarsBehavior =
+                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    } else {
+                        insetsController.show(WindowInsetsCompat.Type.systemBars())
+                    }
+                    getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("is_fullscreen", state.isFullScreen)
+                        .apply()
                 }
 
                 CanvasScreen(viewModel = viewModel)

@@ -23,10 +23,11 @@ class KeypadViewModel(
     private val manageProfileUseCase: ManageProfileUseCase,
     private val dispatchKeyStrokeUseCase: DispatchKeyStrokeUseCase,
     private val compositeHidController: CompositeHidController,
-    private val hapticFeedbackHelper: HapticFeedbackHelper
+    private val hapticFeedbackHelper: HapticFeedbackHelper,
+    initialFullScreen: Boolean = false
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(KeypadUiState())
+    private val _uiState = MutableStateFlow(KeypadUiState(isFullScreen = initialFullScreen))
     val uiState: StateFlow<KeypadUiState> = _uiState.asStateFlow()
 
     init {
@@ -319,7 +320,8 @@ class KeypadViewModel(
         private val manageProfileUseCase: ManageProfileUseCase,
         private val dispatchKeyStrokeUseCase: DispatchKeyStrokeUseCase,
         private val compositeHidController: CompositeHidController,
-        private val hapticFeedbackHelper: HapticFeedbackHelper
+        private val hapticFeedbackHelper: HapticFeedbackHelper,
+        private val initialFullScreen: Boolean = false
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -327,7 +329,8 @@ class KeypadViewModel(
                 manageProfileUseCase,
                 dispatchKeyStrokeUseCase,
                 compositeHidController,
-                hapticFeedbackHelper
+                hapticFeedbackHelper,
+                initialFullScreen
             ) as T
         }
     }
