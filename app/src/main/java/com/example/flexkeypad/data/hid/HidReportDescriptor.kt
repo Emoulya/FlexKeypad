@@ -66,13 +66,30 @@ object HidReportDescriptor {
         for (mod in modifiers) {
             modByte = (modByte.toInt() or mod.bitmask.toInt()).toByte()
         }
+
+        // Also check if any standalone keycode is an HID modifier (0xE0..0xE7)
+        val regularKeys = mutableListOf<Int>()
+        for (code in keyCodes) {
+            when (code) {
+                0xE0 -> modByte = (modByte.toInt() or 0x01).toByte() // Left Control
+                0xE1 -> modByte = (modByte.toInt() or 0x02).toByte() // Left Shift
+                0xE2 -> modByte = (modByte.toInt() or 0x04).toByte() // Left Alt
+                0xE3 -> modByte = (modByte.toInt() or 0x08).toByte() // Left GUI
+                0xE4 -> modByte = (modByte.toInt() or 0x10).toByte() // Right Control
+                0xE5 -> modByte = (modByte.toInt() or 0x20).toByte() // Right Shift
+                0xE6 -> modByte = (modByte.toInt() or 0x40).toByte() // Right Alt
+                0xE7 -> modByte = (modByte.toInt() or 0x80).toByte() // Right GUI
+                else -> regularKeys.add(code)
+            }
+        }
+
         report[0] = modByte
         report[1] = 0 // Reserved
 
-        // Fill up to 6 keycodes
-        val count = minOf(keyCodes.size, 6)
+        // Fill up to 6 regular keycodes
+        val count = minOf(regularKeys.size, 6)
         for (i in 0 until count) {
-            report[2 + i] = keyCodes[i].toByte()
+            report[2 + i] = regularKeys[i].toByte()
         }
 
         return report

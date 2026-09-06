@@ -35,12 +35,13 @@ namespace FlexKeypad.Companion
             try
             {
                 bool createdNew;
-                using (Mutex mutex = new Mutex(true, "Global\\FlexKeypadCompanionMutex", out createdNew))
+                using (Mutex mutex = new Mutex(true, "Local\\FlexKeypadCompanionMutex_v2", out createdNew))
                 {
                     File.AppendAllText(logPath, "Main: createdNew=" + createdNew + "\n");
-                    if (!createdNew)
+                    var existingProcesses = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+                    if (!createdNew && existingProcesses.Length > 1)
                     {
-                        File.AppendAllText(logPath, "Already running, exiting.\n");
+                        File.AppendAllText(logPath, "Already running (" + existingProcesses.Length + " processes), exiting.\n");
                         return;
                     }
 
@@ -95,23 +96,30 @@ namespace FlexKeypad.Companion
         public CompanionAppContext()
         {
             Log("CompanionAppContext constructor started");
-            uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+            try
+            {
+                uiContext = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
 
-            iconConnected = CreateStatusIcon(Color.FromArgb(0, 230, 118)); // Vibrant Neon Green
-            Log("iconConnected created");
-            iconDisconnected = CreateStatusIcon(Color.FromArgb(120, 144, 156)); // Muted Blue Gray
-            Log("iconDisconnected created");
+                iconConnected = CreateStatusIcon(Color.FromArgb(0, 230, 118)); // Vibrant Neon Green
+                Log("iconConnected created");
+                iconDisconnected = CreateStatusIcon(Color.FromArgb(120, 144, 156)); // Muted Blue Gray
+                Log("iconDisconnected created");
 
-            InitializeTray();
-            Log("Tray initialized");
-            EnsureAutoStartup();
-            RealDesktopInput.Start();
-            Log("RealDesktopInput started");
+                InitializeTray();
+                Log("Tray initialized");
+                EnsureAutoStartup();
+                RealDesktopInput.Start();
+                Log("RealDesktopInput started");
 
-            watchdogThread = new Thread(WatchdogLoop);
-            watchdogThread.IsBackground = true;
-            watchdogThread.Start();
-            Log("Watchdog started");
+                watchdogThread = new Thread(WatchdogLoop);
+                watchdogThread.IsBackground = true;
+                watchdogThread.Start();
+                Log("Watchdog started");
+            }
+            catch (Exception ex)
+            {
+                Log("Exception in CompanionAppContext constructor: " + ex.ToString());
+            }
         }
 
         private void InitializeTray()
@@ -257,11 +265,10 @@ namespace FlexKeypad.Companion
                 client.NoDelay = true;
 
                 NetworkStream stream = client.GetStream();
-                stream.ReadTimeout = 2500; // Handshake timeout
                 StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
                 StreamReader reader = new StreamReader(stream, Encoding.UTF8);
 
-                // Send initial handshake so the bidirectional tunnel stays active
+                // Send initial handshake
                 writer.WriteLine("{\"type\":\"CONNECT\",\"version\":1}");
 
                 // Await handshake ACK from Android app
@@ -270,8 +277,9 @@ namespace FlexKeypad.Companion
                 {
                     firstLine = reader.ReadLine();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log("Handshake read error: " + ex.Message);
                     return false;
                 }
 
@@ -282,27 +290,7 @@ namespace FlexKeypad.Companion
                 }
 
                 Log("Watchdog: Handshake successful with FlexKeypad at port 8899!");
-                stream.ReadTimeout = 3500; // 3.5s timeout: auto-detects disconnect when no PONG or event received
                 UpdateUiSafe(delegate() { SetConnectionState(true); });
-
-                // Background heartbeat ping thread (sends PING every 1.5s)
-                Thread pingThread = new Thread(delegate()
-                {
-                    while (isRunning && client.Connected)
-                    {
-                        try
-                        {
-                            Thread.Sleep(1500);
-                            if (client.Connected)
-                            {
-                                writer.WriteLine("{\"type\":\"PING\"}");
-                            }
-                        }
-                        catch { break; }
-                    }
-                });
-                pingThread.IsBackground = true;
-                pingThread.Start();
 
                 while (isRunning && client.Connected)
                 {
@@ -431,6 +419,7 @@ namespace FlexKeypad.Companion
                 }
 
                 ushort vk = HidToVkMapper.GetVkCode(hidCode);
+                Log("KeyEvent: action=" + action + ", hidCode=" + hidCode + ", vk=0x" + vk.ToString("X2"));
 
                 if (action == "DOWN")
                 {
@@ -775,7 +764,17 @@ namespace FlexKeypad.Companion
             // Function Keys F1-F12 (0x3A - 0x45 -> 0x70 - 0x7B)
             { 0x3A, 0x70 }, { 0x3B, 0x71 }, { 0x3C, 0x72 }, { 0x3D, 0x73 },
             { 0x3E, 0x74 }, { 0x3F, 0x75 }, { 0x40, 0x76 }, { 0x41, 0x77 },
-            { 0x42, 0x78 }, { 0x43, 0x79 }, { 0x44, 0x7A }, { 0x45, 0x7B }
+            { 0x42, 0x78 }, { 0x43, 0x79 }, { 0x44, 0x7A }, { 0x45, 0x7B },
+
+            // Modifiers as Primary Keys (0xE0 - 0xE7)
+            { 0xE0, 0x11 }, // Left Control -> VK_CONTROL
+            { 0xE1, 0x10 }, // Left Shift -> VK_SHIFT
+            { 0xE2, 0x12 }, // Left Alt -> VK_MENU
+            { 0xE3, 0x5B }, // Left GUI / Windows -> VK_LWIN
+            { 0xE4, 0x11 }, // Right Control -> VK_CONTROL
+            { 0xE5, 0x10 }, // Right Shift -> VK_SHIFT
+            { 0xE6, 0x12 }, // Right Alt -> VK_MENU
+            { 0xE7, 0x5C }  // Right GUI / Windows -> VK_RWIN
         };
 
         public static ushort GetVkCode(int hidCode)

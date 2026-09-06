@@ -8,6 +8,7 @@ data class KeyDefinition(
 )
 
 enum class KeyCategory(val displayName: String) {
+    MODIFIERS("Modifiers"),
     LETTERS("Letters"),
     NUMBERS("Numbers"),
     FUNCTION("Function Keys"),
@@ -19,6 +20,16 @@ enum class KeyCategory(val displayName: String) {
 object HidKeyCodes {
     // USB HID Keyboard / Keypad Page (0x07) Keycodes
     const val KEY_NONE = 0x00
+
+    // Modifiers (0xE0 - 0xE7)
+    const val KEY_LEFT_CTRL = 0xE0
+    const val KEY_LEFT_SHIFT = 0xE1
+    const val KEY_LEFT_ALT = 0xE2
+    const val KEY_LEFT_GUI = 0xE3
+    const val KEY_RIGHT_CTRL = 0xE4
+    const val KEY_RIGHT_SHIFT = 0xE5
+    const val KEY_RIGHT_ALT = 0xE6
+    const val KEY_RIGHT_GUI = 0xE7
 
     // Letters A-Z (0x04 - 0x1D)
     const val KEY_A = 0x04
@@ -128,6 +139,16 @@ object HidKeyCodes {
     const val KEY_KP_DOT = 0x63
 
     val ALL_KEYS: List<KeyDefinition> = buildList {
+        // Modifiers (as standalone assignable keys)
+        add(KeyDefinition(KEY_LEFT_CTRL, "Ctrl", KeyCategory.MODIFIERS, "Left Control"))
+        add(KeyDefinition(KEY_LEFT_ALT, "Alt", KeyCategory.MODIFIERS, "Left Alt"))
+        add(KeyDefinition(KEY_LEFT_SHIFT, "Shift", KeyCategory.MODIFIERS, "Left Shift"))
+        add(KeyDefinition(KEY_LEFT_GUI, "Win", KeyCategory.MODIFIERS, "Windows / GUI"))
+        add(KeyDefinition(KEY_RIGHT_CTRL, "R-Ctrl", KeyCategory.MODIFIERS, "Right Control"))
+        add(KeyDefinition(KEY_RIGHT_ALT, "R-Alt", KeyCategory.MODIFIERS, "Right Alt"))
+        add(KeyDefinition(KEY_RIGHT_SHIFT, "R-Shift", KeyCategory.MODIFIERS, "Right Shift"))
+        add(KeyDefinition(KEY_RIGHT_GUI, "R-Win", KeyCategory.MODIFIERS, "Right Windows / GUI"))
+
         // Letters
         val letters = ('A'..'Z').toList()
         for (i in letters.indices) {

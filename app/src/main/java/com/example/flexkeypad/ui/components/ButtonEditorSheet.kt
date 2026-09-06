@@ -89,7 +89,10 @@ fun ButtonEditorDialog(
     var selectedBgColor by remember { mutableStateOf(button.backgroundColor) }
     var hapticEnabled by remember { mutableStateOf(button.hapticEnabled) }
 
-    var selectedCategory by remember { mutableStateOf(KeyCategory.LETTERS) }
+    val initialCategory = remember(button.hidKeyCode) {
+        HidKeyCodes.ALL_KEYS.find { it.code == button.hidKeyCode }?.category ?: KeyCategory.LETTERS
+    }
+    var selectedCategory by remember { mutableStateOf(initialCategory) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -264,8 +267,9 @@ fun ButtonEditorDialog(
                                             .background(if (isChosen) NeonGreen.copy(alpha = 0.25f) else AmoledSurfaceVariant)
                                             .border(1.dp, if (isChosen) NeonGreen else AmoledBorder, RoundedCornerShape(8.dp))
                                             .clickable {
+                                                val prevKeyLabel = HidKeyCodes.getKeyLabel(selectedKeyCode)
                                                 selectedKeyCode = keyDef.code
-                                                if (label.isBlank() || label.startsWith("BTN")) {
+                                                if (label.isBlank() || label.startsWith("BTN") || label == prevKeyLabel) {
                                                     label = keyDef.label
                                                 }
                                             }
