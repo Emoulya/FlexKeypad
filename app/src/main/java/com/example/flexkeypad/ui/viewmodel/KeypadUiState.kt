@@ -20,5 +20,6 @@ data class KeypadUiState(
     val editingButton: KeypadButton? = null,
     val isProfileDialogOpen: Boolean = false,
     val isConnectionDialogOpen: Boolean = false,
+    val isFullScreen: Boolean = false,
     val infoMessage: String? = null
 )

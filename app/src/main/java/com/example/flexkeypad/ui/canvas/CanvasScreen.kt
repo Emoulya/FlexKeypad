@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.flexkeypad.domain.model.CanvasMode
 import com.example.flexkeypad.ui.components.ButtonEditorDialog
-import com.example.flexkeypad.ui.components.CanvasToolbar
+import com.example.flexkeypad.ui.components.CanvasTopMenu
 import com.example.flexkeypad.ui.components.ConnectionDialog
 import com.example.flexkeypad.ui.components.ProfileDialog
 import com.example.flexkeypad.ui.theme.AmoledBlack
@@ -63,15 +63,16 @@ fun CanvasScreen(
 
             }
 
-            // Top Floating Toolbar
-            CanvasToolbar(
+            // Top Right Hamburger Dropdown Menu
+            CanvasTopMenu(
                 state = state,
                 onToggleMode = { viewModel.toggleCanvasMode() },
+                onToggleFullScreen = { viewModel.toggleFullScreen() },
                 onAddNewButton = { viewModel.addNewButton() },
                 onToggleGrid = { viewModel.toggleSnapToGrid() },
                 onOpenProfileDialog = { viewModel.openProfileDialog() },
                 onOpenConnectionDialog = { viewModel.openConnectionDialog() },
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.TopEnd)
             )
 
             // Button Editor Dialog

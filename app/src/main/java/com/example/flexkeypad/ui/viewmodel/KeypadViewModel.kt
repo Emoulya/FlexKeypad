@@ -87,6 +87,10 @@ class KeypadViewModel(
         _uiState.update { it.copy(isSnapToGrid = !it.isSnapToGrid) }
     }
 
+    fun toggleFullScreen() {
+        _uiState.update { it.copy(isFullScreen = !it.isFullScreen) }
+    }
+
     fun selectButton(buttonId: String?) {
         if (_uiState.value.canvasMode == CanvasMode.EDIT) {
             _uiState.update { it.copy(selectedButtonId = buttonId) }
