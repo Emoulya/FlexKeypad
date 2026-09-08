@@ -7,4 +7,11 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="splash_background">#0D0E15</color>
+    <color name="brand_cyan">#00F2FE</color>
+    <color name="brand_cyan_glow">#4FACFE</color>
+    <color name="brand_violet">#8B5CF6</color>
+    <color name="brand_violet_glow">#A855F7</color>
+    <color name="dark_slate">#12141F</color>
+    <color name="dark_slate_card">#1A1D2D</color>
 </resources>

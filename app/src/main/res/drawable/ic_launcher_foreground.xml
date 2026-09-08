@@ -4,27 +4,186 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
+
+    <!-- Ambient Glow behind WASD cluster -->
+    <path
+        android:pathData="M54,50m-30,0a30,30 0 1,1 60,0a30,30 0 1,1 -60,0">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
+                android:centerX="54"
+                android:centerY="50"
+                android:gradientRadius="30"
+                android:type="radial">
+                <item android:offset="0.0" android:color="#4000F2FE" />
+                <item android:offset="0.6" android:color="#208B5CF6" />
+                <item android:offset="1.0" android:color="#00000000" />
             </gradient>
         </aapt:attr>
     </path>
+
+    <!-- Base Plate / Chassis behind keys -->
+    <path
+        android:fillColor="#151826"
+        android:strokeColor="#2A3048"
+        android:strokeWidth="1"
+        android:pathData="M42,22 h24 a4,4 0 0,1 4,4 v18 h18 a4,4 0 0,1 4,4 v22 a4,4 0 0,1 -4,4 h-64 a4,4 0 0,1 -4,-4 v-22 a4,4 0 0,1 4,-4 h18 v-18 a4,4 0 0,1 4,-4 z" />
+
+    <!-- Connection Trace Lines (Circuit / Telemetry) -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.6"
+        android:pathData="M54,43 V49 M41,59 H45 M63,59 H67 M54,69 V75" />
+
+    <!-- ==================== W KEY (TOP) ==================== -->
+    <!-- W Key Base Drop Shadow -->
+    <path
+        android:fillColor="#0A0C14"
+        android:pathData="M45,26 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- W Keycap Top Surface -->
+    <path
+        android:pathData="M45,24 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="45"
+                android:startY="24"
+                android:endX="66"
+                android:endY="44"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00F2FE" />
+                <item android:offset="1.0" android:color="#0284C7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- W Keycap Bevel Highlight -->
+    <path
+        android:strokeColor="#E0F2FE"
+        android:strokeWidth="0.8"
+        android:pathData="M45,24 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- W Arrow / Glyph (Crisp White) -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
+        android:pathData="M54,29 L59.5,36 H56 V39 H52 V36 H48.5 Z" />
+
+    <!-- ==================== A KEY (LEFT) ==================== -->
+    <!-- A Key Base Drop Shadow -->
+    <path
+        android:fillColor="#0A0C14"
+        android:pathData="M22,50 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- A Keycap Top Surface -->
+    <path
+        android:pathData="M22,48 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="22"
+                android:startY="48"
+                android:endX="43"
+                android:endY="68"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#A855F7" />
+                <item android:offset="1.0" android:color="#6D28D9" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- A Keycap Bevel Highlight -->
+    <path
+        android:strokeColor="#F3E8FF"
+        android:strokeWidth="0.8"
+        android:pathData="M22,48 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- A Arrow / Glyph (Crisp White) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M27,57 L34,51.5 V55 H37 V59 H34 V62.5 Z" />
+
+    <!-- ==================== S KEY (CENTER) ==================== -->
+    <!-- S Key Base Drop Shadow -->
+    <path
+        android:fillColor="#0A0C14"
+        android:pathData="M45,50 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- S Keycap Top Surface -->
+    <path
+        android:pathData="M45,48 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="45"
+                android:startY="48"
+                android:endX="66"
+                android:endY="68"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#38BDF8" />
+                <item android:offset="1.0" android:color="#0284C7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- S Keycap Bevel Highlight -->
+    <path
+        android:strokeColor="#E0F2FE"
+        android:strokeWidth="0.8"
+        android:pathData="M45,48 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- S Arrow / Glyph (Crisp White) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,65 L48.5,58 H52 V55 H56 V58 H59.5 Z" />
+
+    <!-- ==================== D KEY (RIGHT) ==================== -->
+    <!-- D Key Base Drop Shadow -->
+    <path
+        android:fillColor="#0A0C14"
+        android:pathData="M68,50 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- D Keycap Top Surface -->
+    <path
+        android:pathData="M68,48 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="68"
+                android:startY="48"
+                android:endX="89"
+                android:endY="68"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#E879F9" />
+                <item android:offset="1.0" android:color="#A21CAF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- D Keycap Bevel Highlight -->
+    <path
+        android:strokeColor="#FAE8FF"
+        android:strokeWidth="0.8"
+        android:pathData="M68,48 h18 a3,3 0 0,1 3,3 v14 a3,3 0 0,1 -3,3 h-18 a3,3 0 0,1 -3,-3 v-14 a3,3 0 0,1 3,-3 z" />
+    <!-- D Arrow / Glyph (Crisp White) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M81,57 L74,51.5 V55 H71 V59 H74 V62.5 Z" />
+
+    <!-- ==================== WIRELESS TELEMETRY STRIP ==================== -->
+    <!-- Status / Latency Lightbar at Bottom -->
+    <path
+        android:pathData="M34,77 h40 a2,2 0 0,1 2,2 v1 a2,2 0 0,1 -2,2 h-40 a2,2 0 0,1 -2,-2 v-1 a2,2 0 0,1 2,-2 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="34"
+                android:startY="78"
+                android:endX="76"
+                android:endY="78"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00F2FE" />
+                <item android:offset="0.5" android:color="#38BDF8" />
+                <item android:offset="1.0" android:color="#C084FC" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Wireless Wave Pulses Above Lightbar -->
+    <path
+        android:strokeColor="#00F2FE"
         android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:strokeLineCap="round"
+        android:pathData="M48,84 a7,7 0 0,1 12,0" />
+    <path
+        android:strokeColor="#A855F7"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:pathData="M44,87 a13,13 0 0,1 20,0" />
+
 </vector>
