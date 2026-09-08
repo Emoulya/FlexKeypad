@@ -1,7 +1,11 @@
 package com.example.flexkeypad
 
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -49,6 +53,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val bluetoothStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED) {
+                val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+                if (state == BluetoothAdapter.STATE_ON) {
+                    bluetoothController.initializeHidProfile()
+                }
+            }
+        }
+    }
+
     private val viewModel: KeypadViewModel by viewModels {
         KeypadViewModel.Factory(
             manageProfileUseCase = ManageProfileUseCase(profileRepository),
@@ -77,6 +92,7 @@ class MainActivity : ComponentActivity() {
         profileRepository = JsonProfileRepositoryImpl(this)
         appSettingsRepository = DataStoreAppSettingsRepositoryImpl(this)
 
+        registerReceiver(bluetoothStateReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
         requestBluetoothPermissionsIfNeeded()
 
         setContent {
@@ -133,6 +149,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        bluetoothController.initializeHidProfile()
+    }
+
     override fun onPause() {
         super.onPause()
         // Guarantee no stuck keys if user minimizes or switches apps
@@ -141,6 +162,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        try {
+            unregisterReceiver(bluetoothStateReceiver)
+        } catch (_: Exception) {}
+
         if (isFinishing) {
             compositeController.release()
             bluetoothController.release()

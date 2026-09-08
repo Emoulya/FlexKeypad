@@ -121,6 +121,11 @@ class BluetoothHidController(
             return
         }
 
+        if (hidDevice != null && isAppRegistered) {
+            Log.d(TAG, "HID profile is already active and registered.")
+            return
+        }
+
         try {
             bluetoothAdapter.getProfileProxy(context, serviceListener, BluetoothProfile.HID_DEVICE)
         } catch (e: SecurityException) {
