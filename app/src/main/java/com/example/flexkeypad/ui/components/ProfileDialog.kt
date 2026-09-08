@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -84,6 +85,7 @@ fun ProfileDialog(
     var isExportLoading by remember { mutableStateOf(false) }
     var exportResultJson by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
+    var profilePendingDelete by remember { mutableStateOf<KeypadProfile?>(null) }
 
     val context = LocalContext.current
 
@@ -368,9 +370,9 @@ fun ProfileDialog(
                                         )
                                     }
 
-                                    if (profiles.size > 1) {
+                                     if (profiles.size > 1) {
                                         IconButton(
-                                            onClick = { onDeleteProfile(profile.profileId) },
+                                            onClick = { profilePendingDelete = profile },
                                             modifier = Modifier.size(28.dp)
                                         ) {
                                             Icon(
@@ -471,6 +473,57 @@ fun ProfileDialog(
                     }
                 }
             }
+        }
+
+        // Confirmation Dialog before Deleting Profile
+        profilePendingDelete?.let { prof ->
+            AlertDialog(
+                onDismissRequest = { profilePendingDelete = null },
+                title = {
+                    Text(
+                        text = "Hapus Profil",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Apakah Anda yakin ingin menghapus profil \"${prof.profileName}\"? Seluruh layout tombol di profil ini akan dihapus secara permanen.",
+                        color = TextMuted,
+                        fontSize = 13.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onDeleteProfile(prof.profileId)
+                            profilePendingDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NeonRed,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Hapus", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { profilePendingDelete = null },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AmoledSurfaceVariant,
+                            contentColor = TextMuted
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Batal")
+                    }
+                },
+                containerColor = AmoledSurface,
+                shape = RoundedCornerShape(16.dp)
+            )
         }
     }
 }

@@ -6,6 +6,8 @@ import com.example.flexkeypad.domain.model.ModifierKey
 import com.example.flexkeypad.domain.repository.HidController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +19,8 @@ class CompositeHidController(
     val usbController: UsbBridgeController
 ) : HidController {
 
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.Default + job)
     private val _connectionStatus = MutableStateFlow(ConnectionStatus.DISCONNECTED)
     override val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
 
@@ -52,5 +55,9 @@ class CompositeHidController(
     override fun releaseAllKeys() {
         bluetoothController.releaseAllKeys()
         usbController.releaseAllKeys()
+    }
+
+    fun release() {
+        job.cancel()
     }
 }

@@ -26,8 +26,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +59,10 @@ import androidx.compose.runtime.setValue
 import com.example.flexkeypad.ui.theme.AmoledSurface
 import com.example.flexkeypad.ui.theme.NeonGreen
 import com.example.flexkeypad.ui.theme.TextPrimary
+import com.example.flexkeypad.util.parseColorHex
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import kotlin.math.roundToInt
 
 @Composable
@@ -76,6 +82,7 @@ fun EditModeCanvas(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current.density
+    var buttonPendingDelete by remember { mutableStateOf<KeypadButton?>(null) }
 
     Box(
         modifier = modifier
@@ -113,7 +120,7 @@ fun EditModeCanvas(
                 },
                 onEdit = { onEditButton(button) },
                 onDuplicate = { onDuplicateButton(button) },
-                onDelete = { onDeleteButton(button.id) },
+                onDelete = { buttonPendingDelete = button },
                 modifier = Modifier.offset {
                     IntOffset(
                         (button.positionX * density).roundToInt(),
@@ -147,6 +154,57 @@ fun EditModeCanvas(
                     )
                 }
             }
+        }
+
+        // Confirmation Dialog before Deleting Button
+        buttonPendingDelete?.let { btn ->
+            AlertDialog(
+                onDismissRequest = { buttonPendingDelete = null },
+                title = {
+                    Text(
+                        text = "Hapus Tombol",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Apakah Anda yakin ingin menghapus tombol \"${btn.label}\"?",
+                        color = TextMuted,
+                        fontSize = 13.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onDeleteButton(btn.id)
+                            buttonPendingDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NeonRed,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Hapus", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { buttonPendingDelete = null },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AmoledSurface,
+                            contentColor = TextMuted
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Batal")
+                    }
+                },
+                containerColor = Color(0xFF0F172A),
+                shape = RoundedCornerShape(16.dp)
+            )
         }
     }
 }
@@ -189,8 +247,8 @@ fun EditModeButtonItem(
             .size(button.width.dp, button.height.dp)
     ) {
         // Main Button Surface with Smooth Drag Gesture & Hold-to-Duplicate
-        var dragAccumulatedX = 0f
-        var dragAccumulatedY = 0f
+        var dragAccumulatedX by remember(button.id) { mutableFloatStateOf(0f) }
+        var dragAccumulatedY by remember(button.id) { mutableFloatStateOf(0f) }
 
         Box(
             modifier = Modifier
@@ -446,8 +504,8 @@ fun EditModeButtonItem(
             }
 
             // Resize Handle at Bottom-Right inside button bounds
-            var resizeAccumulatedW = 0f
-            var resizeAccumulatedH = 0f
+            var resizeAccumulatedW by remember(button.id) { mutableFloatStateOf(0f) }
+            var resizeAccumulatedH by remember(button.id) { mutableFloatStateOf(0f) }
 
             Box(
                 modifier = Modifier

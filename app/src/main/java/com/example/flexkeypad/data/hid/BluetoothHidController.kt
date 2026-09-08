@@ -100,10 +100,6 @@ class BluetoothHidController(
         }
     }
 
-    init {
-        initializeHidProfile()
-    }
-
     fun hasBluetoothPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&

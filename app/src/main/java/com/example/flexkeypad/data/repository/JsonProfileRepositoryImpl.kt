@@ -9,13 +9,16 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.example.flexkeypad.domain.model.KeypadProfile
 import com.example.flexkeypad.domain.repository.ProfileRepository
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -29,6 +32,8 @@ class JsonProfileRepositoryImpl(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ProfileRepository {
 
+    private val scope = CoroutineScope(ioDispatcher + SupervisorJob())
+
     private val json = Json {
         prettyPrint = true
         ignoreUnknownKeys = true
@@ -41,10 +46,12 @@ class JsonProfileRepositoryImpl(
     private val _profilesFlow = MutableStateFlow<List<KeypadProfile>>(emptyList())
 
     init {
-        if (!profilesDirectory.exists()) {
-            profilesDirectory.mkdirs()
+        scope.launch {
+            if (!profilesDirectory.exists()) {
+                profilesDirectory.mkdirs()
+            }
+            loadAllProfilesFromDisk()
         }
-        loadAllProfilesFromDisk()
     }
 
     private fun loadAllProfilesFromDisk() {

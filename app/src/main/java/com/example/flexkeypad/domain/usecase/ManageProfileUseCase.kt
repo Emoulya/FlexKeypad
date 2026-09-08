@@ -98,7 +98,6 @@ class ManageProfileUseCase(
         val result = repository.importProfileFromJson(jsonString)
         if (result.isSuccess) {
             val imported = result.getOrThrow()
-            repository.saveProfile(imported)
             repository.setActiveProfileId(imported.profileId)
         }
         return result

@@ -59,10 +59,6 @@ class UsbBridgeController private constructor(
     private val _connectedClientsCount = MutableStateFlow(0)
     val connectedClientsCount: StateFlow<Int> = _connectedClientsCount.asStateFlow()
 
-    init {
-        startServer()
-    }
-
     @Synchronized
     fun startServer() {
         if (isServerRunning && serverJob?.isActive == true) {

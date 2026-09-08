@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -58,7 +59,7 @@ import com.example.flexkeypad.domain.model.HidKeyCodes
 import com.example.flexkeypad.domain.model.KeyCategory
 import com.example.flexkeypad.domain.model.KeypadButton
 import com.example.flexkeypad.domain.model.ModifierKey
-import com.example.flexkeypad.ui.canvas.parseColorHex
+import com.example.flexkeypad.util.parseColorHex
 import com.example.flexkeypad.ui.theme.AmoledBorder
 import com.example.flexkeypad.ui.theme.AmoledSurface
 import com.example.flexkeypad.ui.theme.AmoledSurfaceVariant
@@ -88,6 +89,7 @@ fun ButtonEditorDialog(
     var selectedModifiers by remember { mutableStateOf(button.modifiers.toSet()) }
     var selectedBgColor by remember { mutableStateOf(button.backgroundColor) }
     var hapticEnabled by remember { mutableStateOf(button.hapticEnabled) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     val initialCategory = remember(button.hidKeyCode) {
         HidKeyCodes.ALL_KEYS.find { it.code == button.hidKeyCode }?.category ?: KeyCategory.LETTERS
@@ -360,7 +362,7 @@ fun ButtonEditorDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { onDelete(button.id) },
+                        onClick = { showDeleteConfirmation = true },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = NeonRed.copy(alpha = 0.15f),
                             contentColor = NeonRed
@@ -416,6 +418,57 @@ fun ButtonEditorDialog(
                     }
                 }
             }
+        }
+
+        // Confirmation Dialog before Deleting Button
+        if (showDeleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmation = false },
+                title = {
+                    Text(
+                        text = "Hapus Tombol",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Apakah Anda yakin ingin menghapus tombol \"${button.label}\"?",
+                        color = TextMuted,
+                        fontSize = 13.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDeleteConfirmation = false
+                            onDelete(button.id)
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NeonRed,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Hapus", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { showDeleteConfirmation = false },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AmoledSurfaceVariant,
+                            contentColor = TextMuted
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Batal")
+                    }
+                },
+                containerColor = AmoledSurface,
+                shape = RoundedCornerShape(16.dp)
+            )
         }
     }
 }

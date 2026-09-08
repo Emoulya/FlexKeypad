@@ -1,6 +1,7 @@
 package com.example.flexkeypad.ui.canvas
 
 import androidx.compose.animation.core.animateFloatAsState
+import com.example.flexkeypad.util.parseColorHex
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -286,19 +287,5 @@ fun PlayModeButtonView(
                 overflow = TextOverflow.Ellipsis
             )
         }
-    }
-}
-
-fun parseColorHex(hex: String, defaultColor: Color): Color {
-    return try {
-        val clean = hex.removePrefix("#")
-        val colorInt = clean.toLong(16)
-        if (clean.length == 6) {
-            Color(colorInt or 0x00000000FF000000L)
-        } else {
-            Color(colorInt)
-        }
-    } catch (_: Exception) {
-        defaultColor
     }
 }

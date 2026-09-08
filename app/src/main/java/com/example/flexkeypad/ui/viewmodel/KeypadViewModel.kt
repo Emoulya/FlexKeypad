@@ -10,6 +10,7 @@ import com.example.flexkeypad.data.usb.UsbBridgeController
 import com.example.flexkeypad.domain.model.CanvasMode
 import com.example.flexkeypad.domain.model.KeypadButton
 import com.example.flexkeypad.domain.model.KeypadProfile
+import com.example.flexkeypad.domain.repository.AppSettingsRepository
 import com.example.flexkeypad.domain.usecase.DispatchKeyStrokeUseCase
 import com.example.flexkeypad.domain.usecase.ManageProfileUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,19 +25,25 @@ class KeypadViewModel(
     private val dispatchKeyStrokeUseCase: DispatchKeyStrokeUseCase,
     private val compositeHidController: CompositeHidController,
     private val hapticFeedbackHelper: HapticFeedbackHelper,
-    initialFullScreen: Boolean = false,
-    initialHapticEnabled: Boolean = true
+    private val appSettingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        KeypadUiState(
-            isFullScreen = initialFullScreen,
-            isHapticEnabled = initialHapticEnabled
-        )
-    )
+    private val _uiState = MutableStateFlow(KeypadUiState())
     val uiState: StateFlow<KeypadUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            appSettingsRepository.isFullScreen.collect { fullScreen ->
+                _uiState.update { it.copy(isFullScreen = fullScreen) }
+            }
+        }
+
+        viewModelScope.launch {
+            appSettingsRepository.isHapticEnabled.collect { haptic ->
+                _uiState.update { it.copy(isHapticEnabled = haptic) }
+            }
+        }
+
         var isInitialProfileLoad = true
         viewModelScope.launch {
             manageProfileUseCase.getActiveProfile().collect { profile ->
@@ -95,14 +102,19 @@ class KeypadViewModel(
     }
 
     fun toggleFullScreen() {
-        _uiState.update { it.copy(isFullScreen = !it.isFullScreen) }
+        val next = !_uiState.value.isFullScreen
+        viewModelScope.launch {
+            appSettingsRepository.setFullScreen(next)
+        }
     }
 
     fun toggleHaptic() {
         val next = !_uiState.value.isHapticEnabled
-        _uiState.update { it.copy(isHapticEnabled = next) }
         if (next) {
             hapticFeedbackHelper.performKeyClick()
+        }
+        viewModelScope.launch {
+            appSettingsRepository.setHapticEnabled(next)
         }
     }
 
@@ -359,8 +371,7 @@ class KeypadViewModel(
         private val dispatchKeyStrokeUseCase: DispatchKeyStrokeUseCase,
         private val compositeHidController: CompositeHidController,
         private val hapticFeedbackHelper: HapticFeedbackHelper,
-        private val initialFullScreen: Boolean = false,
-        private val initialHapticEnabled: Boolean = true
+        private val appSettingsRepository: AppSettingsRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -369,8 +380,7 @@ class KeypadViewModel(
                 dispatchKeyStrokeUseCase,
                 compositeHidController,
                 hapticFeedbackHelper,
-                initialFullScreen,
-                initialHapticEnabled
+                appSettingsRepository
             ) as T
         }
     }

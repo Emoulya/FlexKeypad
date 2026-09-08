@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.example.flexkeypad.data.feedback.HapticFeedbackHelper
 import com.example.flexkeypad.data.hid.BluetoothHidController
 import com.example.flexkeypad.data.hid.CompositeHidController
+import com.example.flexkeypad.data.repository.DataStoreAppSettingsRepositoryImpl
 import com.example.flexkeypad.data.repository.JsonProfileRepositoryImpl
 import com.example.flexkeypad.data.usb.UsbBridgeController
 import com.example.flexkeypad.domain.model.CanvasMode
@@ -36,7 +37,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var usbController: UsbBridgeController
     private lateinit var compositeController: CompositeHidController
     private lateinit var hapticHelper: HapticFeedbackHelper
-    private lateinit var repository: JsonProfileRepositoryImpl
+    private lateinit var profileRepository: JsonProfileRepositoryImpl
+    private lateinit var appSettingsRepository: DataStoreAppSettingsRepositoryImpl
 
     private val bluetoothPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -48,16 +50,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private val viewModel: KeypadViewModel by viewModels {
-        val prefs = getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
-        val savedFullScreen = prefs.getBoolean("is_fullscreen", false)
-        val savedHapticEnabled = prefs.getBoolean("is_haptic_enabled", true)
         KeypadViewModel.Factory(
-            manageProfileUseCase = ManageProfileUseCase(repository),
+            manageProfileUseCase = ManageProfileUseCase(profileRepository),
             dispatchKeyStrokeUseCase = DispatchKeyStrokeUseCase(compositeController),
             compositeHidController = compositeController,
             hapticFeedbackHelper = hapticHelper,
-            initialFullScreen = savedFullScreen,
-            initialHapticEnabled = savedHapticEnabled
+            appSettingsRepository = appSettingsRepository
         )
     }
 
@@ -76,7 +74,8 @@ class MainActivity : ComponentActivity() {
         usbController = UsbBridgeController.getInstance(port = 8899)
         usbController.startServer()
         compositeController = CompositeHidController(bluetoothController, usbController)
-        repository = JsonProfileRepositoryImpl(this)
+        profileRepository = JsonProfileRepositoryImpl(this)
+        appSettingsRepository = DataStoreAppSettingsRepositoryImpl(this)
 
         requestBluetoothPermissionsIfNeeded()
 
@@ -103,18 +102,6 @@ class MainActivity : ComponentActivity() {
                     } else {
                         insetsController.show(WindowInsetsCompat.Type.systemBars())
                     }
-                    getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
-                        .edit()
-                        .putBoolean("is_fullscreen", state.isFullScreen)
-                        .apply()
-                }
-
-                // Persist Haptic Enabled state
-                LaunchedEffect(state.isHapticEnabled) {
-                    getSharedPreferences("flexkeypad_prefs", Context.MODE_PRIVATE)
-                        .edit()
-                        .putBoolean("is_haptic_enabled", state.isHapticEnabled)
-                        .apply()
                 }
 
                 CanvasScreen(viewModel = viewModel)
@@ -138,7 +125,11 @@ class MainActivity : ComponentActivity() {
                         Manifest.permission.BLUETOOTH_ADVERTISE
                     )
                 )
+            } else {
+                bluetoothController.initializeHidProfile()
             }
+        } else {
+            bluetoothController.initializeHidProfile()
         }
     }
 
@@ -151,6 +142,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         if (isFinishing) {
+            compositeController.release()
             bluetoothController.release()
             usbController.stopServer()
         }
