@@ -15,7 +15,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bluetooth
@@ -119,53 +129,79 @@ fun CanvasTopMenu(
     )
 
     Box(
-        modifier = modifier.padding(top = 16.dp, end = 0.dp)
+        modifier = modifier
     ) {
-        // Minimalist Side Tab Handle Button (Docked to right edge)
-        Box(
-            modifier = Modifier
-                .width(34.dp)
-                .height(54.dp)
-                .clip(tabShape)
-                .background(AmoledSurface.copy(alpha = 0.94f))
-                .border(1.dp, AmoledBorder, tabShape)
-                .clickable { menuExpanded = !menuExpanded }
-        ) {
-            // Dynamic Connection Status Dot Indicator
+        // Full-screen scrim to capture outside clicks and dismiss menu smoothly
+        if (menuExpanded) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x = 6.dp, y = 6.dp)
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(statusColor)
-                    .border(1.dp, AmoledBlack, CircleShape)
-            )
-
-            // Dynamic Chevron Icon (points Left when closed, Right when open)
-            Icon(
-                imageVector = Icons.Default.ChevronLeft,
-                contentDescription = if (menuExpanded) "Collapse Menu" else "Expand Menu",
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .size(20.dp)
-                    .align(Alignment.Center)
-                    .rotate(rotationAngle)
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { menuExpanded = false }
             )
         }
 
-        // Modern Glassmorphic Dropdown Menu
-        DropdownMenu(
-            expanded = menuExpanded,
-            onDismissRequest = { menuExpanded = false },
-            offset = DpOffset(x = (-226).dp, y = 4.dp),
+        // Side Tab & Docked Menu pinned to TopEnd (Flush against right screen edge)
+        Column(
             modifier = Modifier
-                .width(260.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(AmoledSurface)
-                .border(1.dp, AmoledBorder, RoundedCornerShape(18.dp))
-                .padding(vertical = 6.dp)
+                .align(Alignment.TopEnd)
+                .padding(top = 16.dp, end = 0.dp),
+            horizontalAlignment = Alignment.End
         ) {
+            // Minimalist Side Tab Handle Button (Docked to right edge)
+            Box(
+                modifier = Modifier
+                    .width(34.dp)
+                    .height(54.dp)
+                    .clip(tabShape)
+                    .background(AmoledSurface.copy(alpha = 0.94f))
+                    .border(1.dp, AmoledBorder, tabShape)
+                    .clickable { menuExpanded = !menuExpanded }
+            ) {
+                // Dynamic Connection Status Dot Indicator
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = 6.dp, y = 6.dp)
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(statusColor)
+                        .border(1.dp, AmoledBlack, CircleShape)
+                )
+
+                // Dynamic Chevron Icon (points Left when closed, Right when open)
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    contentDescription = if (menuExpanded) "Collapse Menu" else "Expand Menu",
+                    tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .size(20.dp)
+                        .align(Alignment.Center)
+                        .rotate(rotationAngle)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Modern Glassmorphic Side Menu Panel (Docked flush against right edge)
+            AnimatedVisibility(
+                visible = menuExpanded,
+                enter = fadeIn(tween(180)) + slideInHorizontally(tween(220)) { it },
+                exit = fadeOut(tween(140)) + slideOutHorizontally(tween(180)) { it }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(250.dp)
+                        .clip(tabShape)
+                        .background(AmoledSurface.copy(alpha = 0.96f))
+                        .border(1.dp, AmoledBorder, tabShape)
+                        .padding(vertical = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    ) {
             val isPlay = state.canvasMode == CanvasMode.PLAY
 
             // 1. Canvas Mode Switcher Card
@@ -472,6 +508,9 @@ fun CanvasTopMenu(
                     },
                     colors = MenuDefaults.itemColors(textColor = TextPrimary)
                 )
+            }
+                    }
+                }
             }
         }
     }

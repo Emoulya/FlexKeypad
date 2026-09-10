@@ -90,7 +90,7 @@ fun CanvasScreen(
 
             }
 
-            // Top Right Hamburger Dropdown Menu
+            // Top Right Expand/Collapse Side Menu
             CanvasTopMenu(
                 state = state,
                 onToggleMode = { viewModel.toggleCanvasMode() },
@@ -100,7 +100,7 @@ fun CanvasScreen(
                 onToggleGrid = { viewModel.toggleSnapToGrid() },
                 onOpenProfileDialog = { viewModel.openProfileDialog() },
                 onOpenConnectionDialog = { viewModel.openConnectionDialog() },
-                modifier = Modifier.align(Alignment.TopEnd)
+                modifier = Modifier.fillMaxSize()
             )
 
             // Button Editor Dialog
