@@ -15,10 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
@@ -44,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
@@ -103,36 +106,51 @@ fun CanvasTopMenu(
         )
     }
 
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (menuExpanded) 180f else 0f,
+        label = "chevronRotation"
+    )
+
+    val tabShape = RoundedCornerShape(
+        topStart = 16.dp,
+        bottomStart = 16.dp,
+        topEnd = 0.dp,
+        bottomEnd = 0.dp
+    )
+
     Box(
-        modifier = modifier.padding(top = 16.dp, end = 16.dp)
+        modifier = modifier.padding(top = 16.dp, end = 0.dp)
     ) {
-        // Compact Glassmorphic Hamburger Trigger Button
+        // Minimalist Side Tab Handle Button (Docked to right edge)
         Box(
             modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(AmoledSurface.copy(alpha = 0.92f))
-                .border(1.dp, AmoledBorder, RoundedCornerShape(14.dp))
+                .width(34.dp)
+                .height(54.dp)
+                .clip(tabShape)
+                .background(AmoledSurface.copy(alpha = 0.94f))
+                .border(1.dp, AmoledBorder, tabShape)
                 .clickable { menuExpanded = !menuExpanded }
         ) {
-            Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Open Menu",
-                tint = NeonCyan,
-                modifier = Modifier
-                    .size(22.dp)
-                    .align(Alignment.Center)
-            )
-
             // Dynamic Connection Status Dot Indicator
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = (-4).dp, y = 4.dp)
-                    .size(9.dp)
+                    .align(Alignment.TopStart)
+                    .offset(x = 6.dp, y = 6.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(statusColor)
-                    .border(1.5.dp, AmoledBlack, CircleShape)
+                    .border(1.dp, AmoledBlack, CircleShape)
+            )
+
+            // Dynamic Chevron Icon (points Left when closed, Right when open)
+            Icon(
+                imageVector = Icons.Default.ChevronLeft,
+                contentDescription = if (menuExpanded) "Collapse Menu" else "Expand Menu",
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .size(20.dp)
+                    .align(Alignment.Center)
+                    .rotate(rotationAngle)
             )
         }
 
@@ -140,7 +158,7 @@ fun CanvasTopMenu(
         DropdownMenu(
             expanded = menuExpanded,
             onDismissRequest = { menuExpanded = false },
-            offset = DpOffset(x = 0.dp, y = 8.dp),
+            offset = DpOffset(x = (-226).dp, y = 4.dp),
             modifier = Modifier
                 .width(260.dp)
                 .clip(RoundedCornerShape(18.dp))
