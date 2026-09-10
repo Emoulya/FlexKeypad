@@ -299,12 +299,28 @@ class KeypadViewModel(
         _uiState.update { it.copy(isProfileDialogOpen = false) }
     }
 
+    fun refreshBondedDevices() {
+        val bonded = compositeHidController.bluetoothController.getBondedDevices().map { dev ->
+            val name = try { dev.name ?: dev.address } catch (e: SecurityException) { dev.address }
+            BluetoothDeviceInfo(name = name, address = dev.address)
+        }
+        _uiState.update { it.copy(bondedDevices = bonded) }
+    }
+
     fun openConnectionDialog() {
+        refreshBondedDevices()
         _uiState.update { it.copy(isConnectionDialogOpen = true) }
     }
 
     fun closeConnectionDialog() {
         _uiState.update { it.copy(isConnectionDialogOpen = false) }
+    }
+
+    fun connectBluetoothDevice(address: String) {
+        val device = compositeHidController.bluetoothController.getBondedDevices().find { it.address == address }
+        if (device != null) {
+            compositeHidController.bluetoothController.connect(device)
+        }
     }
 
     fun clearInfoMessage() {

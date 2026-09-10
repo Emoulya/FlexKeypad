@@ -38,7 +38,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.provider.Settings
 import com.example.flexkeypad.domain.model.ConnectionStatus
+import com.example.flexkeypad.ui.theme.AmoledBlack
 import com.example.flexkeypad.ui.theme.AmoledBorder
 import com.example.flexkeypad.ui.theme.AmoledSurface
 import com.example.flexkeypad.ui.theme.AmoledSurfaceVariant
@@ -48,14 +58,20 @@ import com.example.flexkeypad.ui.theme.NeonRed
 import com.example.flexkeypad.ui.theme.TextMuted
 import com.example.flexkeypad.ui.theme.TextPrimary
 import com.example.flexkeypad.ui.theme.TextSecondary
+import com.example.flexkeypad.ui.viewmodel.BluetoothDeviceInfo
 
 @Composable
 fun ConnectionDialog(
     status: ConnectionStatus,
     connectedDeviceName: String?,
     usbClientsCount: Int,
+    bondedDevices: List<BluetoothDeviceInfo> = emptyList(),
+    onConnectBluetooth: (String) -> Unit = {},
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val isBtConnected = status == ConnectionStatus.CONNECTED_BLUETOOTH
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -126,34 +142,139 @@ fun ConnectionDialog(
                                 )
                             }
 
-                            val isBtConnected = status == ConnectionStatus.CONNECTED_BLUETOOTH
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(if (isBtConnected) NeonGreen else NeonRed)
+                                        .background(if (isBtConnected) NeonGreen else if (status == ConnectionStatus.CONNECTING) NeonCyan else NeonRed)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (isBtConnected) (connectedDeviceName ?: "Connected") else "Disconnected",
-                                    color = if (isBtConnected) NeonGreen else TextMuted,
+                                    text = when {
+                                        isBtConnected -> connectedDeviceName ?: "Connected"
+                                        status == ConnectionStatus.CONNECTING -> "Connecting..."
+                                        else -> "Disconnected"
+                                    },
+                                    color = if (isBtConnected) NeonGreen else if (status == ConnectionStatus.CONNECTING) NeonCyan else TextMuted,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        // Paired Devices List
+                        if (bondedDevices.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Perangkat Ter-pairing (Pilih PC untuk disambungkan):",
+                                color = TextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                bondedDevices.forEach { dev ->
+                                    val isCurrentConnected = isBtConnected && (
+                                            connectedDeviceName?.contains(dev.name, ignoreCase = true) == true ||
+                                                    connectedDeviceName?.contains(dev.address, ignoreCase = true) == true
+                                            )
+
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (isCurrentConnected) AmoledSurface else AmoledBlack,
+                                        border = BorderStroke(1.dp, if (isCurrentConnected) NeonGreen.copy(alpha = 0.6f) else AmoledBorder),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = dev.name,
+                                                    color = TextPrimary,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(
+                                                    text = dev.address,
+                                                    color = TextMuted,
+                                                    fontSize = 10.sp,
+                                                    fontFamily = FontFamily.Monospace
+                                                )
+                                            }
+
+                                            if (isCurrentConnected) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = NeonGreen.copy(alpha = 0.15f),
+                                                    border = BorderStroke(1.dp, NeonGreen)
+                                                ) {
+                                                    Text(
+                                                        text = "Terhubung",
+                                                        color = NeonGreen,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                                    )
+                                                }
+                                            } else {
+                                                Button(
+                                                    onClick = { onConnectBluetooth(dev.address) },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = NeonCyan,
+                                                        contentColor = Color.Black
+                                                    ),
+                                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                                    modifier = Modifier.height(32.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (status == ConnectionStatus.CONNECTING) "Menghubungkan..." else "Sambungkan",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "How to connect via Bluetooth:\n" +
-                                    "1. On your PC/Laptop, open Bluetooth settings.\n" +
-                                    "2. Click 'Add Bluetooth device' and search for 'FlexKeypad'.\n" +
-                                    "3. Pair and connect. Your PC will recognize it as a standard wireless keyboard instantly without any additional drivers.",
+                            text = "Petunjuk Koneksi Bluetooth:\n" +
+                                    "1. Pastikan PC/Laptop dan HP sudah di-pairing di menu Bluetooth Windows.\n" +
+                                    "2. Klik 'Sambungkan' pada nama PC di atas untuk mengaktifkan saluran keyboard HID nirkabel.\n" +
+                                    "3. PC akan otomatis menerima input ketikan keyboard tanpa perlu software tambahan.",
                             color = TextSecondary,
-                            fontSize = 12.sp,
-                            lineHeight = 18.sp
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
                         )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = {
+                                try {
+                                    context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                                } catch (_: Exception) {}
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, AmoledBorder),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text(
+                                text = "Buka Pengaturan Bluetooth HP",
+                                color = TextMuted,
+                                fontSize = 10.sp
+                            )
+                        }
                     }
                 }
 

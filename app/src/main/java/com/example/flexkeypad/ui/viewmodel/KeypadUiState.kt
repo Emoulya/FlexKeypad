@@ -5,6 +5,11 @@ import com.example.flexkeypad.domain.model.ConnectionStatus
 import com.example.flexkeypad.domain.model.KeypadButton
 import com.example.flexkeypad.domain.model.KeypadProfile
 
+data class BluetoothDeviceInfo(
+    val name: String,
+    val address: String
+)
+
 data class KeypadUiState(
     val activeProfile: KeypadProfile = KeypadProfile("default", "Default Keypad", emptyList()),
     val profiles: List<KeypadProfile> = emptyList(),
@@ -14,6 +19,7 @@ data class KeypadUiState(
     val gridSize: Float = 20f,
     val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
     val connectedDeviceName: String? = null,
+    val bondedDevices: List<BluetoothDeviceInfo> = emptyList(),
     val usbClientsCount: Int = 0,
     val pressedButtonIds: Set<String> = emptySet(),
     val isButtonEditorOpen: Boolean = false,

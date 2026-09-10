@@ -133,6 +133,8 @@ fun CanvasScreen(
                     status = state.connectionStatus,
                     connectedDeviceName = state.connectedDeviceName,
                     usbClientsCount = state.usbClientsCount,
+                    bondedDevices = state.bondedDevices,
+                    onConnectBluetooth = { address -> viewModel.connectBluetoothDevice(address) },
                     onDismiss = { viewModel.closeConnectionDialog() }
                 )
             }

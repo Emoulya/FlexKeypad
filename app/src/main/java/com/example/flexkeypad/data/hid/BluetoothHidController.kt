@@ -149,8 +149,73 @@ class BluetoothHidController(
 
         try {
             hid.registerApp(sdpSettings, null, null, executor, hidCallback)
+            val connected = hid.getConnectedDevices()
+            if (connected.isNotEmpty()) {
+                handleDeviceConnection(connected.first())
+            }
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while registering HID App", e)
+        }
+    }
+
+    fun getBondedDevices(): List<BluetoothDevice> {
+        if (!hasBluetoothPermissions() || bluetoothAdapter == null) return emptyList()
+        return try {
+            bluetoothAdapter.bondedDevices?.toList() ?: emptyList()
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException reading bonded devices", e)
+            emptyList()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun connect(device: BluetoothDevice): Boolean {
+        val hid = hidDevice
+        if (hid == null) {
+            Log.w(TAG, "Cannot connect: HID device proxy is null. Attempting re-init...")
+            initializeHidProfile()
+            return false
+        }
+        if (!hasBluetoothPermissions()) {
+            Log.w(TAG, "Cannot connect: Missing Bluetooth permissions")
+            return false
+        }
+        return try {
+            Log.d(TAG, "Initiating HID connection to ${device.name ?: device.address}...")
+            _connectionStatus.value = ConnectionStatus.CONNECTING
+            val initiated = hid.connect(device)
+            Log.d(TAG, "hid.connect result: $initiated")
+            if (!initiated) {
+                _connectionStatus.value = ConnectionStatus.DISCONNECTED
+            }
+            initiated
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in connect", e)
+            _connectionStatus.value = ConnectionStatus.DISCONNECTED
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in connect", e)
+            _connectionStatus.value = ConnectionStatus.DISCONNECTED
+            false
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun disconnect(device: BluetoothDevice? = connectedDevice): Boolean {
+        val hid = hidDevice ?: return false
+        val target = device ?: return false
+        if (!hasBluetoothPermissions()) return false
+        return try {
+            val disconnected = hid.disconnect(target)
+            if (disconnected) {
+                connectedDevice = null
+                _connectedDeviceName.value = null
+                _connectionStatus.value = ConnectionStatus.DISCONNECTED
+            }
+            disconnected
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in disconnect", e)
+            false
         }
     }
 
