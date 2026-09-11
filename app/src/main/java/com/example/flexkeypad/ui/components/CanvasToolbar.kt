@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterCenterFocus
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -87,6 +88,7 @@ fun CanvasTopMenu(
     onToggleHaptic: () -> Unit,
     onAddNewButton: () -> Unit,
     onToggleGrid: () -> Unit,
+    onToggleSnapToButtons: () -> Unit,
     onOpenProfileDialog: () -> Unit,
     onOpenConnectionDialog: () -> Unit,
     modifier: Modifier = Modifier
@@ -469,18 +471,19 @@ fun CanvasTopMenu(
                     colors = MenuDefaults.itemColors(textColor = TextPrimary)
                 )
 
+                // 7. Grid Background Toggle
                 DropdownMenuItem(
                     leadingIcon = {
                         Icon(
-                            imageVector = if (state.isSnapToGrid) Icons.Default.GridOn else Icons.Default.GridOff,
-                            contentDescription = "Grid",
-                            tint = if (state.isSnapToGrid) NeonCyan else TextMuted,
+                            imageVector = if (state.showGrid) Icons.Default.GridOn else Icons.Default.GridOff,
+                            contentDescription = "Grid Background",
+                            tint = if (state.showGrid) NeonCyan else TextMuted,
                             modifier = Modifier.size(18.dp)
                         )
                     },
                     text = {
                         Text(
-                            text = "Snap to Grid",
+                            text = "Grid Background",
                             color = TextPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
@@ -490,12 +493,12 @@ fun CanvasTopMenu(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(if (state.isSnapToGrid) NeonCyan.copy(alpha = 0.2f) else AmoledBorder)
+                                .background(if (state.showGrid) NeonCyan.copy(alpha = 0.2f) else AmoledBorder)
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = if (state.isSnapToGrid) "ON" else "OFF",
-                                color = if (state.isSnapToGrid) NeonCyan else TextMuted,
+                                text = if (state.showGrid) "ON" else "OFF",
+                                color = if (state.showGrid) NeonCyan else TextMuted,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -503,9 +506,46 @@ fun CanvasTopMenu(
                     },
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                     modifier = Modifier.height(36.dp),
-                    onClick = {
-                        onToggleGrid()
+                    onClick = onToggleGrid,
+                    colors = MenuDefaults.itemColors(textColor = TextPrimary)
+                )
+
+                // 8. Snap to Buttons (Magnetic Alignment)
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.FilterCenterFocus,
+                            contentDescription = "Snap to Buttons",
+                            tint = if (state.isSnapToButtons) NeonCyan else TextMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
                     },
+                    text = {
+                        Text(
+                            text = "Snap to Buttons",
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
+                    trailingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (state.isSnapToButtons) NeonCyan.copy(alpha = 0.2f) else AmoledBorder)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (state.isSnapToButtons) "ON" else "OFF",
+                                color = if (state.isSnapToButtons) NeonCyan else TextMuted,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                    modifier = Modifier.height(36.dp),
+                    onClick = onToggleSnapToButtons,
                     colors = MenuDefaults.itemColors(textColor = TextPrimary)
                 )
             }

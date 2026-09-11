@@ -1,5 +1,6 @@
 package com.example.flexkeypad.ui.canvas
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -34,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flexkeypad.domain.model.KeypadButton
+import com.example.flexkeypad.util.ButtonSnappingHelper
 import com.example.flexkeypad.ui.theme.AmoledBorder
 import com.example.flexkeypad.ui.theme.NeonCyan
 import com.example.flexkeypad.ui.theme.NeonRed
@@ -69,7 +73,8 @@ import kotlin.math.roundToInt
 fun EditModeCanvas(
     buttons: List<KeypadButton>,
     selectedButtonId: String?,
-    isSnapToGrid: Boolean,
+    showGrid: Boolean,
+    isSnapToButtons: Boolean,
     gridSize: Float,
     onSelectButton: (String?) -> Unit,
     onMoveButtonLive: (buttonId: String, newX: Float, newY: Float) -> Unit,
@@ -83,6 +88,8 @@ fun EditModeCanvas(
 ) {
     val density = LocalDensity.current.density
     var buttonPendingDelete by remember { mutableStateOf<KeypadButton?>(null) }
+    var activeGuideLineX by remember { mutableStateOf<Float?>(null) }
+    var activeGuideLineY by remember { mutableStateOf<Float?>(null) }
 
     Box(
         modifier = modifier
@@ -94,8 +101,34 @@ fun EditModeCanvas(
             }
     ) {
         // Render alignment grid if enabled
-        if (isSnapToGrid) {
+        if (showGrid) {
             GridOverlay(gridSizePx = gridSize * density)
+        }
+
+        // Render dynamic magnetic snap guidelines
+        if (isSnapToButtons && (activeGuideLineX != null || activeGuideLineY != null)) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                activeGuideLineX?.let { gx ->
+                    val px = gx * density
+                    drawLine(
+                        color = NeonCyan.copy(alpha = 0.8f),
+                        start = Offset(px, 0f),
+                        end = Offset(px, size.height),
+                        strokeWidth = 1.5f * density,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f * density, 4f * density))
+                    )
+                }
+                activeGuideLineY?.let { gy ->
+                    val py = gy * density
+                    drawLine(
+                        color = NeonCyan.copy(alpha = 0.8f),
+                        start = Offset(0f, py),
+                        end = Offset(size.width, py),
+                        strokeWidth = 1.5f * density,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f * density, 4f * density))
+                    )
+                }
+            }
         }
 
         buttons.forEach { button ->
@@ -103,6 +136,8 @@ fun EditModeCanvas(
 
             EditModeButtonItem(
                 button = button,
+                allButtons = buttons,
+                isSnapToButtons = isSnapToButtons,
                 isSelected = isSelected,
                 density = density,
                 onSelect = { onSelectButton(button.id) },
@@ -111,6 +146,10 @@ fun EditModeCanvas(
                 },
                 onCommitMove = { x, y ->
                     onCommitMoveButton(button.id, x, y)
+                },
+                onUpdateGuidelines = { gx, gy ->
+                    activeGuideLineX = gx
+                    activeGuideLineY = gy
                 },
                 onResizeLive = { w, h ->
                     onResizeButtonLive(button.id, w, h)
@@ -212,11 +251,14 @@ fun EditModeCanvas(
 @Composable
 fun EditModeButtonItem(
     button: KeypadButton,
+    allButtons: List<KeypadButton>,
+    isSnapToButtons: Boolean,
     isSelected: Boolean,
     density: Float,
     onSelect: () -> Unit,
     onMoveLive: (newX: Float, newY: Float) -> Unit,
     onCommitMove: (finalX: Float, finalY: Float) -> Unit,
+    onUpdateGuidelines: (guideX: Float?, guideY: Float?) -> Unit,
     onResizeLive: (newW: Float, newH: Float) -> Unit,
     onCommitResize: (finalW: Float, finalH: Float) -> Unit,
     onEdit: () -> Unit,
@@ -233,9 +275,12 @@ fun EditModeButtonItem(
 
     // Capture latest lambdas and button data to avoid stale closures in pointerInput
     val currentButton by rememberUpdatedState(button)
+    val currentAllButtons by rememberUpdatedState(allButtons)
+    val currentIsSnapToButtons by rememberUpdatedState(isSnapToButtons)
     val currentOnSelect by rememberUpdatedState(onSelect)
     val currentOnMoveLive by rememberUpdatedState(onMoveLive)
     val currentOnCommitMove by rememberUpdatedState(onCommitMove)
+    val currentOnUpdateGuidelines by rememberUpdatedState(onUpdateGuidelines)
     val currentOnResizeLive by rememberUpdatedState(onResizeLive)
     val currentOnCommitResize by rememberUpdatedState(onCommitResize)
     val currentOnDuplicate by rememberUpdatedState(onDuplicate)
@@ -289,13 +334,58 @@ fun EditModeButtonItem(
                             val deltaDpY = dragAmount.y / density
                             dragAccumulatedX = (dragAccumulatedX + deltaDpX).coerceAtLeast(0f)
                             dragAccumulatedY = (dragAccumulatedY + deltaDpY).coerceAtLeast(0f)
-                            currentOnMoveLive(dragAccumulatedX, dragAccumulatedY)
+
+                            val (liveX, liveY) = if (currentIsSnapToButtons) {
+                                val snap = ButtonSnappingHelper.calculateSnap(
+                                    buttonId = currentButton.id,
+                                    currentX = dragAccumulatedX,
+                                    currentY = dragAccumulatedY,
+                                    width = currentButton.width,
+                                    height = currentButton.height,
+                                    otherButtons = currentAllButtons
+                                )
+                                currentOnUpdateGuidelines(snap.guideLineX, snap.guideLineY)
+                                snap.snappedX to snap.snappedY
+                            } else {
+                                currentOnUpdateGuidelines(null, null)
+                                dragAccumulatedX to dragAccumulatedY
+                            }
+
+                            currentOnMoveLive(liveX, liveY)
                         },
                         onDragEnd = {
-                            currentOnCommitMove(dragAccumulatedX, dragAccumulatedY)
+                            currentOnUpdateGuidelines(null, null)
+                            val (finalX, finalY) = if (currentIsSnapToButtons) {
+                                val snap = ButtonSnappingHelper.calculateSnap(
+                                    buttonId = currentButton.id,
+                                    currentX = dragAccumulatedX,
+                                    currentY = dragAccumulatedY,
+                                    width = currentButton.width,
+                                    height = currentButton.height,
+                                    otherButtons = currentAllButtons
+                                )
+                                snap.snappedX to snap.snappedY
+                            } else {
+                                dragAccumulatedX to dragAccumulatedY
+                            }
+                            currentOnCommitMove(finalX, finalY)
                         },
                         onDragCancel = {
-                            currentOnCommitMove(dragAccumulatedX, dragAccumulatedY)
+                            currentOnUpdateGuidelines(null, null)
+                            val (finalX, finalY) = if (currentIsSnapToButtons) {
+                                val snap = ButtonSnappingHelper.calculateSnap(
+                                    buttonId = currentButton.id,
+                                    currentX = dragAccumulatedX,
+                                    currentY = dragAccumulatedY,
+                                    width = currentButton.width,
+                                    height = currentButton.height,
+                                    otherButtons = currentAllButtons
+                                )
+                                snap.snappedX to snap.snappedY
+                            } else {
+                                dragAccumulatedX to dragAccumulatedY
+                            }
+                            currentOnCommitMove(finalX, finalY)
                         }
                     )
                 }

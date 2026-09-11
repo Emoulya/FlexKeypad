@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun GridOverlay(
     gridSizePx: Float,
-    gridColor: Color = Color(0xFF1E293B).copy(alpha = 0.4f),
+    gridColor: Color = Color(0xFF334155).copy(alpha = 0.65f),
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {

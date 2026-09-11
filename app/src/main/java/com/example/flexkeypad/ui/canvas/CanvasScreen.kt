@@ -75,7 +75,8 @@ fun CanvasScreen(
                 EditModeCanvas(
                     buttons = state.activeProfile.buttons,
                     selectedButtonId = state.selectedButtonId,
-                    isSnapToGrid = state.isSnapToGrid,
+                    showGrid = state.showGrid,
+                    isSnapToButtons = state.isSnapToButtons,
                     gridSize = state.gridSize,
                     onSelectButton = { viewModel.selectButton(it) },
                     onMoveButtonLive = { id, x, y -> viewModel.updateButtonPositionLive(id, x, y) },
@@ -97,7 +98,8 @@ fun CanvasScreen(
                 onToggleFullScreen = { viewModel.toggleFullScreen() },
                 onToggleHaptic = { viewModel.toggleHaptic() },
                 onAddNewButton = { viewModel.addNewButton() },
-                onToggleGrid = { viewModel.toggleSnapToGrid() },
+                onToggleGrid = { viewModel.toggleShowGrid() },
+                onToggleSnapToButtons = { viewModel.toggleSnapToButtons() },
                 onOpenProfileDialog = { viewModel.openProfileDialog() },
                 onOpenConnectionDialog = { viewModel.openConnectionDialog() },
                 modifier = Modifier.fillMaxSize()

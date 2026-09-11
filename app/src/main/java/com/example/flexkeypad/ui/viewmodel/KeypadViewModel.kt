@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.flexkeypad.util.ButtonSnappingHelper
 import kotlin.math.round
 
 class KeypadViewModel(
@@ -97,8 +98,12 @@ class KeypadViewModel(
         }
     }
 
-    fun toggleSnapToGrid() {
-        _uiState.update { it.copy(isSnapToGrid = !it.isSnapToGrid) }
+    fun toggleShowGrid() {
+        _uiState.update { it.copy(showGrid = !it.showGrid) }
+    }
+
+    fun toggleSnapToButtons() {
+        _uiState.update { it.copy(isSnapToButtons = !it.isSnapToButtons) }
     }
 
     fun toggleFullScreen() {
@@ -179,17 +184,19 @@ class KeypadViewModel(
         val currentProfile = _uiState.value.activeProfile
         val button = currentProfile.buttons.find { it.id == buttonId } ?: return
 
-        val snappedX = if (_uiState.value.isSnapToGrid) {
-            round(finalX / _uiState.value.gridSize) * _uiState.value.gridSize
+        val (snappedX, snappedY) = if (_uiState.value.isSnapToButtons) {
+            val res = ButtonSnappingHelper.calculateSnap(
+                buttonId = buttonId,
+                currentX = finalX,
+                currentY = finalY,
+                width = button.width,
+                height = button.height,
+                otherButtons = currentProfile.buttons
+            )
+            res.snappedX to res.snappedY
         } else {
-            finalX
-        }.coerceAtLeast(0f)
-
-        val snappedY = if (_uiState.value.isSnapToGrid) {
-            round(finalY / _uiState.value.gridSize) * _uiState.value.gridSize
-        } else {
-            finalY
-        }.coerceAtLeast(0f)
+            finalX.coerceAtLeast(0f) to finalY.coerceAtLeast(0f)
+        }
 
         val updated = button.copy(positionX = snappedX, positionY = snappedY)
         viewModelScope.launch {
@@ -222,19 +229,10 @@ class KeypadViewModel(
         val currentProfile = _uiState.value.activeProfile
         val button = currentProfile.buttons.find { it.id == buttonId } ?: return
 
-        val snappedW = (if (_uiState.value.isSnapToGrid) {
-            round(finalWidth / _uiState.value.gridSize) * _uiState.value.gridSize
-        } else {
-            finalWidth
-        }).coerceIn(60f, 800f)
-
-        val snappedH = (if (_uiState.value.isSnapToGrid) {
-            round(finalHeight / _uiState.value.gridSize) * _uiState.value.gridSize
-        } else {
-            finalHeight
-        }).coerceIn(50f, 600f)
-
-        val updated = button.copy(width = snappedW, height = snappedH)
+        val updated = button.copy(
+            width = finalWidth.coerceIn(60f, 800f),
+            height = finalHeight.coerceIn(50f, 600f)
+        )
         viewModelScope.launch {
             manageProfileUseCase.updateButton(currentProfile, updated)
         }
