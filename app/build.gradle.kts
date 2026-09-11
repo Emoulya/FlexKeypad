@@ -1,11 +1,11 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "com.example.flexkeypad"
+    namespace = "com.emoulya.flexkeypad"
     compileSdk {
         version = release(37)
     }
